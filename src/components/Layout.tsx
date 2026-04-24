@@ -6,6 +6,8 @@ const NAV = [
   { to: '/crm/jogadores', label: 'Jogadores', icon: '👤' },
   { to: '/crm/matches', label: 'Matches', icon: '🔗' },
   { to: '/crm/pipeline', label: 'Pipeline', icon: '📊' },
+  { to: '/crm/mercado', label: 'Buscar Mercado', icon: '🌍' },
+  { to: '/crm/importar', label: 'Importar', icon: '📥' },
 ];
 
 export default function Layout() {
@@ -14,7 +16,7 @@ export default function Layout() {
       <aside className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col fixed inset-y-0 left-0 z-50">
         <div className="p-4 border-b border-gray-800">
           <span className="text-emerald-400 font-bold text-sm tracking-widest uppercase">
-            FootballCore
+            TransferFlow
           </span>
           <p className="text-gray-500 text-xs mt-0.5">Deal Engine</p>
         </div>

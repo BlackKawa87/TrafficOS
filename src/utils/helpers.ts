@@ -40,10 +40,15 @@ export const PRIORITY_LABELS: Record<string, string> = {
 
 export const STATUS_LABELS: Record<string, string> = {
   aberto: 'Aberto',
-  em_analise: 'Em Análise',
+  em_analise: 'Buscando Nomes',
+  match_encontrado: 'Match Encontrado',
+  busca_externa: 'Busca Externa',
+  shortlist_criada: 'Shortlist Criada',
   shortlist_enviada: 'Shortlist Enviada',
+  aguardando_retorno: 'Aguardando Retorno',
   em_negociacao: 'Em Negociação',
   fechado: 'Fechado',
+  perdido: 'Perdido',
   cancelado: 'Cancelado',
   arquivado: 'Arquivado',
 };
@@ -61,9 +66,16 @@ export const RELATION_TYPE_LABELS: Record<string, string> = {
   parceiro: 'Parceiro',
   monitorado: 'Monitorado',
   oportunidade: 'Oportunidade',
+  oportunidade_externa: 'Oport. Externa',
+  pesquisar_empresario: 'Pesq. Empresário',
+  contato_iniciado: 'Contato Iniciado',
+  parceria_negociando: 'Parceria Neg.',
+  autorizado: 'Autorizado',
   oferecido: 'Oferecido',
   em_negociacao: 'Em Negociação',
   sem_fit: 'Sem Fit',
+  sem_acesso: 'Sem Acesso',
+  descartado: 'Descartado',
   arquivado: 'Arquivado',
 };
 
@@ -84,18 +96,63 @@ export const FOOT_LABELS: Record<string, string> = {
 
 export const PIPELINE_STAGES_REQUEST = [
   { key: 'aberto', label: 'Novo Pedido' },
-  { key: 'em_analise', label: 'Filtrando Nomes' },
+  { key: 'em_analise', label: 'Buscando Nomes' },
+  { key: 'match_encontrado', label: 'Match Encontrado' },
+  { key: 'busca_externa', label: 'Busca Externa' },
+  { key: 'shortlist_criada', label: 'Shortlist Criada' },
   { key: 'shortlist_enviada', label: 'Shortlist Enviada' },
+  { key: 'aguardando_retorno', label: 'Aguardando Retorno' },
   { key: 'em_negociacao', label: 'Em Negociação' },
-  { key: 'fechado', label: 'Fechado' },
-  { key: 'cancelado', label: 'Cancelado / Perdido' },
+  { key: 'fechado', label: 'Fechado ✓' },
+  { key: 'perdido', label: 'Perdido' },
 ];
 
 export const PIPELINE_STAGES_PLAYER = [
-  { key: 'monitorado', label: 'Monitorado' },
-  { key: 'proprio', label: 'Pronto p/ Oferta' },
+  { key: 'monitorado', label: 'Cadastrado' },
+  { key: 'oportunidade_externa', label: 'Oport. Externa' },
+  { key: 'pesquisar_empresario', label: 'Pesq. Empresário' },
+  { key: 'contato_iniciado', label: 'Contato Iniciado' },
+  { key: 'parceria_negociando', label: 'Parceria Neg.' },
+  { key: 'autorizado', label: 'Autorizado' },
   { key: 'oferecido', label: 'Oferecido' },
   { key: 'em_negociacao', label: 'Em Negociação' },
-  { key: 'fechado_player', label: 'Fechado' },
-  { key: 'sem_fit', label: 'Sem Fit Atual' },
+  { key: 'fechado', label: 'Fechado ✓' },
+  { key: 'descartado', label: 'Descartado' },
 ];
+
+// Transfermarkt position codes
+export const TM_POSITION_CODES: Record<string, string> = {
+  'Goleiro': 'Torwart',
+  'Zagueiro': 'Innenverteidiger',
+  'Lateral Direito': 'rechter Verteidiger',
+  'Lateral Esquerdo': 'linker Verteidiger',
+  'Volante': 'defensives Mittelfeld',
+  'Meio-campo': 'zentrales Mittelfeld',
+  'Meia Atacante': 'offensives Mittelfeld',
+  'Ponta Direita': 'Rechtsaußen',
+  'Ponta Esquerda': 'Linksaußen',
+  'Centroavante': 'Mittelstürmer',
+  'Segundo Atacante': 'Hängende Spitze',
+};
+
+export function buildTransfermarktUrl(filters: {
+  position?: string;
+  ageMin?: number | null;
+  ageMax?: number | null;
+  foot?: string;
+  valueMax?: number | null;
+  nationality?: string;
+}): string {
+  const base = 'https://www.transfermarkt.com.br/schnellsuche/ergebnis/schnellsuche?query=';
+  const params = new URLSearchParams();
+
+  if (filters.position) {
+    const tmPos = TM_POSITION_CODES[filters.position] || '';
+    if (tmPos) params.set('pos', tmPos);
+  }
+  if (filters.ageMin) params.set('ageFrom', String(filters.ageMin));
+  if (filters.ageMax) params.set('ageTo', String(filters.ageMax));
+
+  const query = params.toString();
+  return `${base}${query ? '&' + query : ''}`;
+}

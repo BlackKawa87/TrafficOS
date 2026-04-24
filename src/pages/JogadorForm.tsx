@@ -67,6 +67,8 @@ const emptyPlayer = (): CRMPlayer => ({
   internal_priority: 'media',
   favorite: false,
   notes: '',
+  external_source_url: '',
+  external_source: '',
   created_at: now(),
   updated_at: now(),
 });
@@ -353,9 +355,16 @@ export default function JogadorForm() {
               <option value="parceiro">Parceiro</option>
               <option value="monitorado">Monitorado</option>
               <option value="oportunidade">Oportunidade</option>
+              <option value="oportunidade_externa">Oport. Externa</option>
+              <option value="pesquisar_empresario">Pesq. Empresário</option>
+              <option value="contato_iniciado">Contato Iniciado</option>
+              <option value="parceria_negociando">Parceria Neg.</option>
+              <option value="autorizado">Autorizado</option>
               <option value="oferecido">Oferecido</option>
               <option value="em_negociacao">Em Negociação</option>
               <option value="sem_fit">Sem Fit</option>
+              <option value="sem_acesso">Sem Acesso</option>
+              <option value="descartado">Descartado</option>
               <option value="arquivado">Arquivado</option>
             </select>
           </Field>

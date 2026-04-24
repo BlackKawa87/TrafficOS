@@ -9,12 +9,11 @@ const Home: React.FC = () => {
           Football Intelligence Platform
         </p>
         <h1 className="text-5xl md:text-6xl font-bold mb-6">
-          FootballCoreHub
-          <span className="text-emerald-400"> v2</span>
+          Transfer<span className="text-emerald-400">Flow</span>
         </h1>
         <p className="text-lg text-gray-300 mb-10">
-          A plataforma de inteligência individual mais avançada do futebol moderno.
-          Pensada para atletas, scouts, empresários e analistas de desempenho.
+          Plataforma de inteligência comercial para transferências de futebol.
+          Pedidos, jogadores, match automático e pipeline em um só lugar.
         </p>
         <Link
           to="/crm"
@@ -23,12 +22,12 @@ const Home: React.FC = () => {
           Acessar CRM de Mercado →
         </Link>
         <p className="text-gray-600 text-sm mt-6">
-          Pedidos · Jogadores · Match Automático · Pipeline
+          Pedidos · Jogadores · Match Automático · Pipeline · Importar
         </p>
       </div>
 
       <div className="absolute top-4 right-4">
-        <span className="text-sm text-gray-600">FootballCoreHub © {new Date().getFullYear()}</span>
+        <span className="text-sm text-gray-600">TransferFlow © {new Date().getFullYear()}</span>
       </div>
     </div>
   );

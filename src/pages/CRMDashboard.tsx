@@ -52,6 +52,12 @@ export default function CRMDashboard() {
   const requestMap = Object.fromEntries(requests.map((r) => [r.id, r]));
   const playerMap = Object.fromEntries(players.map((p) => [p.id, p]));
 
+  const requestsWithMatches = new Set(matches.map((m) => m.request_id));
+  const pedidosSemMatch = openRequests.filter((r) => !requestsWithMatches.has(r.id)).length;
+  const externosSalvos = players.filter((p) => p.relation_type === 'oportunidade_externa').length;
+  const negociacoesAtivas = players.filter((p) => p.relation_type === 'em_negociacao').length +
+    requests.filter((r) => r.status === 'em_negociacao').length;
+
   const stats = [
     {
       label: 'Pedidos Abertos',
@@ -66,15 +72,27 @@ export default function CRMDashboard() {
       link: '/crm/jogadores',
     },
     {
-      label: 'Matches Gerados',
-      value: matches.length,
-      color: 'text-purple-400',
-      link: '/crm/matches',
+      label: 'Sem Match',
+      value: pedidosSemMatch,
+      color: 'text-amber-400',
+      link: '/crm/pedidos',
+    },
+    {
+      label: 'Externos Salvos',
+      value: externosSalvos,
+      color: 'text-indigo-400',
+      link: '/crm/jogadores',
+    },
+    {
+      label: 'Em Negociação',
+      value: negociacoesAtivas,
+      color: 'text-orange-400',
+      link: '/crm/pipeline',
     },
     {
       label: 'Shortlist Total',
       value: shortlistCount,
-      color: 'text-amber-400',
+      color: 'text-purple-400',
       link: '/crm/pedidos',
     },
   ];
@@ -102,11 +120,17 @@ export default function CRMDashboard() {
           >
             + Novo Jogador
           </Link>
+          <Link
+            to="/crm/importar"
+            className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            📥 Importar
+          </Link>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4 md:grid-cols-6">
         {stats.map((s) => (
           <Link
             key={s.label}

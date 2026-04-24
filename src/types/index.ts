@@ -3,9 +3,14 @@ export type Priority = 'baixa' | 'media' | 'alta';
 export type RequestStatus =
   | 'aberto'
   | 'em_analise'
+  | 'match_encontrado'
+  | 'busca_externa'
+  | 'shortlist_criada'
   | 'shortlist_enviada'
+  | 'aguardando_retorno'
   | 'em_negociacao'
   | 'fechado'
+  | 'perdido'
   | 'cancelado'
   | 'arquivado';
 
@@ -29,9 +34,16 @@ export type RelationType =
   | 'parceiro'
   | 'monitorado'
   | 'oportunidade'
+  | 'oportunidade_externa'
+  | 'pesquisar_empresario'
+  | 'contato_iniciado'
+  | 'parceria_negociando'
+  | 'autorizado'
   | 'oferecido'
   | 'em_negociacao'
   | 'sem_fit'
+  | 'sem_acesso'
+  | 'descartado'
   | 'arquivado';
 
 export interface ClubRequest {
@@ -145,6 +157,10 @@ export interface CRMPlayer {
   favorite: boolean;
   notes: string;
 
+  // external source info
+  external_source_url: string;
+  external_source: string;
+
   created_at: string;
   updated_at: string;
 }
@@ -184,4 +200,47 @@ export interface Shortlist {
   notes: string;
   created_at: string;
   updated_at: string;
+}
+
+// AI Import types
+export interface ImportedRequest {
+  club_name: string;
+  club_country: string;
+  club_league: string;
+  position_main: string;
+  position_secondary: string;
+  preferred_foot: PreferredFoot;
+  age_min: number | null;
+  age_max: number | null;
+  height_min: number | null;
+  transfer_budget: number | null;
+  transfer_budget_currency: string;
+  deal_type: DealType;
+  player_style: string;
+  notes: string;
+  priority: Priority;
+}
+
+export interface ImportedPlayer {
+  full_name: string;
+  short_name: string;
+  age: number | null;
+  nationality: string;
+  preferred_foot: PreferredFoot;
+  height: number | null;
+  primary_position: string;
+  current_club: string;
+  current_league: string;
+  market_value: number | null;
+  market_value_currency: string;
+  contract_until: string;
+  partner_name: string;
+  notes: string;
+}
+
+export interface ImportResult {
+  detected_type: 'requests' | 'players' | 'both';
+  confidence: 'high' | 'medium' | 'low';
+  requests: ImportedRequest[];
+  players: ImportedPlayer[];
 }

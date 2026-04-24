@@ -66,6 +66,11 @@ export default function DetalPedido() {
     navigate(`/crm/buscar?${params.toString()}`);
   }
 
+  function handleBuscarMercado() {
+    const params = new URLSearchParams({ request: request!.id });
+    navigate(`/crm/mercado?${params.toString()}`);
+  }
+
   const topMatches = matches.slice(0, 20);
   const shortlistMatches = matches.filter((m) => shortlistedIds.has(m.player_id));
 
@@ -96,10 +101,16 @@ export default function DetalPedido() {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={handleBuscarMercado}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            🌍 Buscar Mercado
+          </button>
+          <button
             onClick={handleBuscar}
             className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            🔍 Buscar Jogadores
+            🔍 Buscar na Base
           </button>
           <Link
             to={`/crm/pedidos/${id}/editar`}

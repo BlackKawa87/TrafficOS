@@ -11,6 +11,8 @@ import DetalJogador from './pages/DetalJogador';
 import Matches from './pages/Matches';
 import Pipeline from './pages/Pipeline';
 import BuscarJogadores from './pages/BuscarJogadores';
+import BuscarMercado from './pages/BuscarMercado';
+import ImportarDados from './pages/ImportarDados';
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
           <Route path="matches" element={<Matches />} />
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="buscar" element={<BuscarJogadores />} />
+          <Route path="mercado" element={<BuscarMercado />} />
+          <Route path="importar" element={<ImportarDados />} />
         </Route>
       </Routes>
     </Router>
