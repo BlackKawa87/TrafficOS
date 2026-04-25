@@ -1,43 +1,40 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './Home';
-import Layout from './components/Layout';
-import CRMDashboard from './pages/CRMDashboard';
-import Pedidos from './pages/Pedidos';
-import PedidoForm from './pages/PedidoForm';
-import DetalPedido from './pages/DetalPedido';
-import Jogadores from './pages/Jogadores';
-import JogadorForm from './pages/JogadorForm';
-import DetalJogador from './pages/DetalJogador';
-import Matches from './pages/Matches';
-import Pipeline from './pages/Pipeline';
-import BuscarJogadores from './pages/BuscarJogadores';
-import BuscarMercado from './pages/BuscarMercado';
-import ImportarDados from './pages/ImportarDados';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Layout from './traffic/components/Layout'
+import Dashboard from './traffic/pages/Dashboard'
+import Produtos from './traffic/pages/Produtos'
+import ProdutoForm from './traffic/pages/ProdutoForm'
+import ProdutoDetalhe from './traffic/pages/ProdutoDetalhe'
+import DiagnosticoOferta from './traffic/pages/DiagnosticoOferta'
+import Campanhas from './traffic/pages/Campanhas'
+import Criativos from './traffic/pages/Criativos'
+import Metricas from './traffic/pages/Metricas'
+import DecisoesIA from './traffic/pages/DecisoesIA'
+import PlanoDiario from './traffic/pages/PlanoDiario'
+import PromptCenter from './traffic/pages/PromptCenter'
+import Configuracoes from './traffic/pages/Configuracoes'
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/crm" element={<Layout />}>
-          <Route index element={<CRMDashboard />} />
-          <Route path="pedidos" element={<Pedidos />} />
-          <Route path="pedidos/novo" element={<PedidoForm />} />
-          <Route path="pedidos/:id" element={<DetalPedido />} />
-          <Route path="pedidos/:id/editar" element={<PedidoForm />} />
-          <Route path="jogadores" element={<Jogadores />} />
-          <Route path="jogadores/novo" element={<JogadorForm />} />
-          <Route path="jogadores/:id" element={<DetalJogador />} />
-          <Route path="jogadores/:id/editar" element={<JogadorForm />} />
-          <Route path="matches" element={<Matches />} />
-          <Route path="pipeline" element={<Pipeline />} />
-          <Route path="buscar" element={<BuscarJogadores />} />
-          <Route path="mercado" element={<BuscarMercado />} />
-          <Route path="importar" element={<ImportarDados />} />
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="produtos" element={<Produtos />} />
+          <Route path="produtos/novo" element={<ProdutoForm />} />
+          <Route path="produtos/:id" element={<ProdutoDetalhe />} />
+          <Route path="produtos/:id/editar" element={<ProdutoForm />} />
+          <Route path="oferta/:produtoId" element={<DiagnosticoOferta />} />
+          <Route path="campanhas" element={<Campanhas />} />
+          <Route path="criativos" element={<Criativos />} />
+          <Route path="metricas" element={<Metricas />} />
+          <Route path="decisoes" element={<DecisoesIA />} />
+          <Route path="plano-diario" element={<PlanoDiario />} />
+          <Route path="prompt-center" element={<PromptCenter />} />
+          <Route path="configuracoes" element={<Configuracoes />} />
         </Route>
       </Routes>
     </Router>
-  );
+  )
 }
 
-export default App;
+export default App
