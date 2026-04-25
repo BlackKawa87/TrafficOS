@@ -1,6 +1,6 @@
 import type { Product, OfferDiagnosis, Campaign, Creative, Metric, AIDecision, PromptTemplate, AIOfferDiagnosis, AICampaign, AICreative, PerformanceInsight } from '../types'
 
-const SEEDS_KEY = 'tos_seeds_v4'
+const SEEDS_KEY = 'tos_seeds_v5'
 
 const DEFAULT_PROMPTS: Omit<PromptTemplate, 'id' | 'created_at' | 'updated_at'>[] = [
   {
@@ -122,6 +122,61 @@ CTR, CPC e CPA esperados.
 Quando usar, quando pausar e quando escalar este criativo.
 
 Seja direto, prático e específico. Use os dados reais do produto. Gere roteiros e copies prontos para execução.`,
+  },
+  {
+    name: 'Analisador de Performance de Criativos',
+    category: 'Análise de Performance',
+    description: 'Analisa métricas de criativos, campanhas e produtos para identificar padrões vencedores e sugerir ações práticas.',
+    variables: ['productData', 'campaignData', 'creativeData', 'metricsData'],
+    template: `Você é um analista sênior de tráfego pago, growth marketing e otimização de criativos.
+
+Sua função é analisar os dados de performance informados e transformar números em decisões práticas.
+
+Dados do produto:
+{{productData}}
+
+Dados da campanha:
+{{campaignData}}
+
+Dados dos criativos:
+{{creativeData}}
+
+Métricas:
+{{metricsData}}
+
+Analise:
+
+1. O que está funcionando
+2. O que está falhando
+3. Quais hooks performam melhor
+4. Quais ângulos geram mais resultado
+5. Quais canais parecem mais promissores
+6. Quais criativos devem ser pausados
+7. Quais criativos devem ser mantidos
+8. Quais criativos devem ser duplicados
+9. Quais criativos devem virar novas variações
+10. Quais produtos parecem ter maior potencial
+11. Quais próximos testes devem ser feitos
+12. Quais riscos existem nos dados atuais
+
+Crie também um plano prático com:
+
+- Ações imediatas
+- Ações para as próximas 24 horas
+- Ações para os próximos 3 dias
+- Ações de escala
+- Ações de correção
+
+Seja crítico, direto e orientado para lucro.
+
+Não tome decisões com pouca amostra sem alertar sobre o risco.
+
+Sempre diferencie:
+- Problema de criativo
+- Problema de oferta
+- Problema de página
+- Problema de público
+- Problema de tracking`,
   },
   {
     name: 'Gerador de Criativos de Alta Conversão',
