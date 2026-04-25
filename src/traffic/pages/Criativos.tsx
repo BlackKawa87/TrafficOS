@@ -36,13 +36,22 @@ export default function Criativos() {
             {creatives.length} {creatives.length === 1 ? 'criativo gerado' : 'criativos gerados'}
           </p>
         </div>
-        <button
-          onClick={() => navigate('/criativos/novo')}
-          className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors flex items-center gap-2"
-        >
-          <span>✦</span>
-          Gerar Criativo com IA
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/criativos/mix')}
+            className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center gap-2 border border-gray-700"
+          >
+            <span>⚡</span>
+            Gerar Mix (6 Criativos)
+          </button>
+          <button
+            onClick={() => navigate('/criativos/novo')}
+            className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <span>✦</span>
+            Gerar Criativo
+          </button>
+        </div>
       </div>
 
       {/* Empty state */}

@@ -50,8 +50,8 @@ export default function Dashboard() {
   const pendingDecisions = decisions
     .filter(d => d.status === 'pending' || d.status === 'in_progress')
     .sort((a, b) => {
-      const pOrder = { high: 0, medium: 1, low: 2 }
-      return pOrder[a.priority] - pOrder[b.priority]
+      const pOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
+      return (pOrder[a.priority] ?? 4) - (pOrder[b.priority] ?? 4)
     })
     .slice(0, 4)
 

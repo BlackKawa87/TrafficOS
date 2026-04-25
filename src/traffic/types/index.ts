@@ -5,9 +5,20 @@ export type CampaignStatus = 'ativa' | 'pausada' | 'encerrada' | 'rascunho'
 export type CampaignPlatform = 'meta_ads' | 'tiktok_ads' | 'google_ads' | 'youtube_ads' | 'outro'
 export type CreativeStatus = 'testing' | 'winner' | 'paused' | 'rejected'
 export type CreativeFormat = 'image' | 'video' | 'carousel' | 'text'
-export type DecisionType = 'pause' | 'maintain' | 'scale' | 'improve'
-export type DecisionStatus = 'pending' | 'in_progress' | 'done' | 'dismissed'
-export type Priority = 'low' | 'medium' | 'high'
+export type DecisionType =
+  | 'pausar_criativo' | 'manter_criativo' | 'escalar_criativo'
+  | 'duplicar_campanha' | 'criar_variacao' | 'trocar_hook'
+  | 'trocar_publico' | 'revisar_oferta' | 'revisar_pagina'
+  | 'criar_remarketing' | 'aumentar_orcamento' | 'reduzir_orcamento'
+  | 'encerrar_campanha' | 'coletar_dados'
+  | 'pause' | 'maintain' | 'scale' | 'improve'
+
+export type DecisionStatus = 'pending' | 'accepted' | 'ignored' | 'executed' | 'archived'
+  | 'in_progress' | 'done' | 'dismissed'
+
+export type Priority = 'low' | 'medium' | 'high' | 'critical'
+
+export type ConfidenceLevel = 'baixo' | 'medio' | 'alto'
 
 export interface Product {
   id: string
@@ -109,11 +120,21 @@ export interface Metric {
 export interface AIDecision {
   id: string
   product_id: string
+  campaign_id?: string
+  creative_id?: string
+  title?: string
   decision_type: DecisionType
   reasoning: string
+  supporting_data?: string
+  confidence_level?: ConfidenceLevel
+  risk?: string
+  recommended_action?: string
+  next_step?: string
+  deadline?: string
   actions: string[]
   priority: Priority
   status: DecisionStatus
+  notes?: string
   created_at: string
 }
 
@@ -359,6 +380,71 @@ export interface PerformanceInsight {
   proximos_testes: string[]
 }
 
+export interface CreativeCena {
+  numero: number
+  texto_falado: string
+  texto_tela: string
+  enquadramento: string
+  duracao: string
+  notas?: string
+}
+
+export interface DirecaoGravacao {
+  quem: string
+  onde: string
+  tom_voz: string
+  expressao: string
+  equipamento?: string
+  observacoes?: string
+}
+
+export interface DirecaoEdicao {
+  cortes: string
+  legendas: string
+  zoom: string
+  musica: string
+  ritmo: string
+  transicoes?: string
+}
+
+export interface ImagemLayout {
+  posicao_titulo: string
+  posicao_subtitulo: string
+  posicao_imagem: string
+  posicao_cta: string
+  hierarquia_visual: string
+  dimensoes: string
+  notas_layout?: string
+}
+
+export interface ImagemTexto {
+  headline: string
+  subheadline: string
+  cta: string
+}
+
+export interface ImagemVariacao {
+  nome: string
+  headline: string
+  angulo: string
+  emocao: string
+}
+
+export interface ImagemEstilo {
+  fundo: string
+  estilo: string
+  fonte: string
+  contraste: string
+  elementos_visuais: string
+}
+
+export interface ImagemReferencia {
+  descricao: string
+  instrucoes_canva: string
+  cores_hex: string[]
+  exemplos_visuais: string
+}
+
 export interface CreativeStrategy {
   nome: string
   ideia_central: string
@@ -371,6 +457,7 @@ export interface CreativeStrategy {
     cta: string
     duracao: string
   }
+  cenas?: CreativeCena[]
   variacoes_roteiro: Array<{ nome: string; roteiro: string }>
   texto_anuncio: {
     textos_principais: string[]
@@ -386,6 +473,15 @@ export interface CreativeStrategy {
     tom_voz: string
     edicao: string
   }
+  direcao_gravacao?: DirecaoGravacao
+  direcao_edicao?: DirecaoEdicao
+  // Image creative fields (filled only for imagem/carrossel types)
+  imagem_tipo?: string
+  imagem_layout?: ImagemLayout
+  imagem_texto?: ImagemTexto
+  imagem_variacoes?: ImagemVariacao[]
+  imagem_estilo?: ImagemEstilo
+  imagem_referencia?: ImagemReferencia
   referencia_visual: string
   variacoes_teste: Array<{ tipo: string; descricao: string }>
   hipotese: string
@@ -399,6 +495,98 @@ export interface CreativeStrategy {
     quando_pausar: string
     quando_escalar: string
   }
+}
+
+// ─── Landing Page ─────────────────────────────────────────────────────────────
+
+export interface LandingPageBlocoLayout {
+  posicao_texto: string
+  posicao_imagem: string
+  espacamento: string
+  hierarquia: string
+  notas: string
+}
+
+export interface LandingPageBlocoCopy {
+  headline?: string
+  subheadline?: string
+  corpo?: string
+  lista_itens?: string[]
+  cta_texto?: string
+  cta_cor?: string
+  cta_tamanho?: string
+}
+
+export interface LandingPageBloco {
+  tipo: string
+  layout: LandingPageBlocoLayout
+  copy: LandingPageBlocoCopy
+}
+
+export interface LandingPageDesign {
+  paleta: Array<{ nome: string; hex: string; uso: string }>
+  fonte_headline: string
+  fonte_corpo: string
+  hierarquia_tipografica: string
+  estilo_visual: string
+  estilo_botao: string
+  estilo_imagens: string
+}
+
+export interface LandingPageMobile {
+  mudancas: string
+  ordem_secoes: string
+  ajustes: string
+}
+
+export interface LandingPageStructure {
+  page_title: string
+  meta_description: string
+  objetivo: string
+  blocos: LandingPageBloco[]
+  design: LandingPageDesign
+  mobile: LandingPageMobile
+  notas_conversao: string
+}
+
+export interface LandingPage {
+  id: string
+  product_id: string
+  structure: LandingPageStructure
+  created_at: string
+}
+
+// ─── Daily Action Plan ───────────────────────────────────────────────────────
+
+export type DailyTaskCategory = 'hoje' | 'proximas_24h' | 'proximos_3_dias' | 'escala' | 'correcao'
+export type DailyTaskStatus = 'pending' | 'done' | 'ignored'
+export type DailyPlanStatus = 'pending' | 'in_progress' | 'done'
+
+export interface DailyTask {
+  id: string
+  description: string
+  category: DailyTaskCategory
+  priority: Priority
+  estimated_time?: string
+  expected_impact?: string
+  related_campaign_id?: string
+  related_creative_id?: string
+  related_decision_id?: string
+  status: DailyTaskStatus
+}
+
+export interface DailyPlan {
+  id: string
+  product_id: string
+  date: string
+  scenario_summary: string
+  day_priority_focus: string
+  day_priority_reason: string
+  tasks: DailyTask[]
+  alerts: string[]
+  next_strategic_step: string
+  status: DailyPlanStatus
+  created_at: string
 }
 
 export interface AICreative {

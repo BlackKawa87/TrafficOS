@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { path: '/metricas', label: 'nav.metrics' as const, icon: '📈' },
   { path: '/decisoes', label: 'nav.decisions' as const, icon: '🤖' },
   { path: '/plano-diario', label: 'nav.plan' as const, icon: '📅' },
+  { path: '/landing-page', label: 'nav.landing' as const, icon: '🖥️' },
   { path: '/prompt-center', label: 'nav.prompts' as const, icon: '💬' },
   { path: '/configuracoes', label: 'nav.settings' as const, icon: '⚙️' },
 ]

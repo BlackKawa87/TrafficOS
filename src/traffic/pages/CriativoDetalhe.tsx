@@ -108,6 +108,7 @@ export default function CriativoDetalhe() {
   const campaign = creative.campaign_id ? tosDb.aiCampaigns.getById(creative.campaign_id) : null
   const allCampaigns = tosDb.aiCampaigns.getAll()
   const s = creative.strategy
+  const isImageCreative = ['imagem', 'carrossel'].includes(creative.creative_type)
 
   function update(patch: Partial<AICreative>) {
     const updated: AICreative = { ...creative!, ...patch, updated_at: now() }
@@ -201,13 +202,60 @@ export default function CriativoDetalhe() {
       `2. HOOKS`,
       ...s.hooks.map(h => `${h.tipo}: ${h.texto}`),
       ``,
-      `3. ROTEIRO COMPLETO (${s.roteiro.duracao})`,
-      `Hook: ${s.roteiro.hook}`,
-      `Problema: ${s.roteiro.problema}`,
-      `Agitação: ${s.roteiro.agitacao}`,
-      `Solução: ${s.roteiro.solucao}`,
+      isImageCreative
+        ? `3. ESTRUTURA NARRATIVA`
+        : `3. ROTEIRO COMPLETO (${s.roteiro.duracao})`,
+      isImageCreative ? `Headline: ${s.roteiro.hook}` : `Hook: ${s.roteiro.hook}`,
+      isImageCreative ? `Contexto: ${s.roteiro.problema}` : `Problema: ${s.roteiro.problema}`,
+      isImageCreative ? `Urgência: ${s.roteiro.agitacao}` : `Agitação: ${s.roteiro.agitacao}`,
+      isImageCreative ? `Benefício: ${s.roteiro.solucao}` : `Solução: ${s.roteiro.solucao}`,
       `CTA: ${s.roteiro.cta}`,
       ``,
+      ...(isImageCreative && s.imagem_tipo ? [
+        `CRIATIVO DE IMAGEM`,
+        `Tipo: ${s.imagem_tipo}`,
+        ``,
+        s.imagem_layout ? [
+          `LAYOUT DA IMAGEM`,
+          `Título: ${s.imagem_layout.posicao_titulo}`,
+          `Subtítulo: ${s.imagem_layout.posicao_subtitulo}`,
+          `Imagem: ${s.imagem_layout.posicao_imagem}`,
+          `CTA: ${s.imagem_layout.posicao_cta}`,
+          `Hierarquia: ${s.imagem_layout.hierarquia_visual}`,
+          `Dimensões: ${s.imagem_layout.dimensoes}`,
+          s.imagem_layout.notas_layout ?? '',
+          ``,
+        ].filter(Boolean) : [],
+        s.imagem_texto ? [
+          `TEXTO DA IMAGEM`,
+          `Headline: ${s.imagem_texto.headline}`,
+          `Subheadline: ${s.imagem_texto.subheadline}`,
+          `CTA: ${s.imagem_texto.cta}`,
+          ``,
+        ] : [],
+        s.imagem_variacoes?.length ? [
+          `VARIAÇÕES (3 VERSÕES)`,
+          ...s.imagem_variacoes.map(v => `${v.nome}\nHeadline: ${v.headline}\nÂngulo: ${v.angulo}\nEmoção: ${v.emocao}`),
+          ``,
+        ] : [],
+        s.imagem_estilo ? [
+          `ESTILO VISUAL`,
+          `Fundo: ${s.imagem_estilo.fundo}`,
+          `Estilo: ${s.imagem_estilo.estilo}`,
+          `Fonte: ${s.imagem_estilo.fonte}`,
+          `Contraste: ${s.imagem_estilo.contraste}`,
+          `Elementos: ${s.imagem_estilo.elementos_visuais}`,
+          ``,
+        ] : [],
+        s.imagem_referencia ? [
+          `REFERÊNCIA / CANVA`,
+          s.imagem_referencia.descricao,
+          `Instruções Canva: ${s.imagem_referencia.instrucoes_canva}`,
+          `Cores: ${s.imagem_referencia.cores_hex?.join(', ') ?? ''}`,
+          `Exemplos: ${s.imagem_referencia.exemplos_visuais}`,
+          ``,
+        ] : [],
+      ].flat() : []),
       `4. VARIAÇÕES DE ROTEIRO`,
       ...s.variacoes_roteiro.map(v => `${v.nome}:\n${v.roteiro}`),
       ``,
@@ -229,6 +277,31 @@ export default function CriativoDetalhe() {
       `Tom de voz: ${s.direcao_criativa.tom_voz}`,
       `Edição: ${s.direcao_criativa.edicao}`,
       ``,
+      ...(s.direcao_gravacao ? [
+        `DIREÇÃO DE GRAVAÇÃO`,
+        `Quem: ${s.direcao_gravacao.quem}`,
+        `Onde: ${s.direcao_gravacao.onde}`,
+        `Tom: ${s.direcao_gravacao.tom_voz}`,
+        `Expressão: ${s.direcao_gravacao.expressao}`,
+        s.direcao_gravacao.equipamento ? `Equipamento: ${s.direcao_gravacao.equipamento}` : '',
+        s.direcao_gravacao.observacoes ? `Obs: ${s.direcao_gravacao.observacoes}` : '',
+        ``,
+      ].filter(Boolean) : []),
+      ...(s.direcao_edicao ? [
+        `DIREÇÃO DE EDIÇÃO`,
+        `Cortes: ${s.direcao_edicao.cortes}`,
+        `Legendas: ${s.direcao_edicao.legendas}`,
+        `Zoom: ${s.direcao_edicao.zoom}`,
+        `Música: ${s.direcao_edicao.musica}`,
+        `Ritmo: ${s.direcao_edicao.ritmo}`,
+        s.direcao_edicao.transicoes ? `Transições: ${s.direcao_edicao.transicoes}` : '',
+        ``,
+      ].filter(Boolean) : []),
+      ...(s.cenas?.length ? [
+        `CENAS — CENA A CENA`,
+        ...s.cenas.map(c => `Cena ${c.numero} (${c.duracao}): ${c.texto_falado}`),
+        ``,
+      ] : []),
       `7. REFERÊNCIA VISUAL`,
       s.referencia_visual,
       ``,
@@ -533,17 +606,30 @@ export default function CriativoDetalhe() {
           </div>
         </SectionCard>
 
-        {/* 3. Roteiro */}
-        <SectionCard number={3} title={`Roteiro Completo — ${s.roteiro.duracao}`} icon="🎬"
-          copyContent={`Hook: ${s.roteiro.hook}\n\nProblema: ${s.roteiro.problema}\n\nAgitação: ${s.roteiro.agitacao}\n\nSolução: ${s.roteiro.solucao}\n\nCTA: ${s.roteiro.cta}`}>
+        {/* 3. Roteiro / Estrutura Narrativa */}
+        <SectionCard
+          number={3}
+          title={isImageCreative ? `Estrutura Narrativa da Imagem` : `Roteiro Completo — ${s.roteiro.duracao}`}
+          icon={isImageCreative ? '📐' : '🎬'}
+          copyContent={isImageCreative
+            ? `Headline: ${s.roteiro.hook}\n\nContexto: ${s.roteiro.problema}\n\nUrgência: ${s.roteiro.agitacao}\n\nBenefício: ${s.roteiro.solucao}\n\nCTA: ${s.roteiro.cta}`
+            : `Hook: ${s.roteiro.hook}\n\nProblema: ${s.roteiro.problema}\n\nAgitação: ${s.roteiro.agitacao}\n\nSolução: ${s.roteiro.solucao}\n\nCTA: ${s.roteiro.cta}`
+          }
+        >
           <div className="space-y-3">
-            {[
+            {(isImageCreative ? [
+              { label: 'Headline', value: s.roteiro.hook, color: 'border-l-violet-500' },
+              { label: 'Contexto / Dor', value: s.roteiro.problema, color: 'border-l-amber-500' },
+              { label: 'Urgência', value: s.roteiro.agitacao, color: 'border-l-red-500' },
+              { label: 'Benefício', value: s.roteiro.solucao, color: 'border-l-emerald-500' },
+              { label: 'CTA Visual', value: s.roteiro.cta, color: 'border-l-blue-500' },
+            ] : [
               { label: 'Hook (0-3s)', value: s.roteiro.hook, color: 'border-l-violet-500' },
               { label: 'Problema (3-8s)', value: s.roteiro.problema, color: 'border-l-amber-500' },
               { label: 'Agitação (8-15s)', value: s.roteiro.agitacao, color: 'border-l-red-500' },
               { label: 'Solução (15-22s)', value: s.roteiro.solucao, color: 'border-l-emerald-500' },
               { label: 'CTA (22-30s)', value: s.roteiro.cta, color: 'border-l-blue-500' },
-            ].map(item => (
+            ]).map(item => (
               <div key={item.label} className={`pl-4 border-l-2 ${item.color} group flex items-start justify-between gap-3`}>
                 <div>
                   <div className="text-xs text-gray-500 mb-1 font-medium">{item.label}</div>
@@ -557,8 +643,226 @@ export default function CriativoDetalhe() {
           </div>
         </SectionCard>
 
-        {/* 4. Variações de roteiro */}
-        <SectionCard number={4} title="Variações de Roteiro" icon="🔀"
+        {/* IMAGE SECTIONS */}
+        {isImageCreative && s.imagem_tipo && (
+          <SectionCard number={4} title="Tipo / Ideia do Criativo" icon="🖼️" copyContent={s.imagem_tipo}>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">
+                {s.imagem_tipo === 'print_alerta' ? '🚨' :
+                 s.imagem_tipo === 'antes_depois' ? '🔄' :
+                 s.imagem_tipo === 'prova_social' ? '⭐' :
+                 s.imagem_tipo === 'erro_comum' ? '❌' :
+                 s.imagem_tipo === 'comparacao' ? '⚖️' : '🖼️'}
+              </span>
+              <div>
+                <div className="text-white font-semibold capitalize">
+                  {s.imagem_tipo.replace(/_/g, ' ')}
+                </div>
+                <div className="text-gray-400 text-xs mt-0.5">
+                  {s.imagem_tipo === 'print_alerta' && 'Urgência visual com headline de alto impacto'}
+                  {s.imagem_tipo === 'antes_depois' && 'Mostra transformação antes e depois do produto'}
+                  {s.imagem_tipo === 'prova_social' && 'Depoimento, resultado ou número de clientes'}
+                  {s.imagem_tipo === 'erro_comum' && 'Alerta sobre erro que o público comete'}
+                  {s.imagem_tipo === 'comparacao' && 'Compara a solução com alternativas do mercado'}
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+        )}
+
+        {isImageCreative && s.imagem_layout && (
+          <SectionCard number={5} title="Layout da Imagem" icon="📐"
+            copyContent={[
+              `Título: ${s.imagem_layout.posicao_titulo}`,
+              `Subtítulo: ${s.imagem_layout.posicao_subtitulo}`,
+              `Imagem: ${s.imagem_layout.posicao_imagem}`,
+              `CTA: ${s.imagem_layout.posicao_cta}`,
+              `Hierarquia: ${s.imagem_layout.hierarquia_visual}`,
+              `Dimensões: ${s.imagem_layout.dimensoes}`,
+              s.imagem_layout.notas_layout ?? '',
+            ].filter(Boolean).join('\n')}>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  { label: '📝 Posição do Título', value: s.imagem_layout.posicao_titulo },
+                  { label: '📄 Posição do Subtítulo', value: s.imagem_layout.posicao_subtitulo },
+                  { label: '🖼 Posição da Imagem', value: s.imagem_layout.posicao_imagem },
+                  { label: '🔲 Posição do CTA', value: s.imagem_layout.posicao_cta },
+                  { label: '📏 Dimensões', value: s.imagem_layout.dimensoes },
+                ].map(item => (
+                  <div key={item.label} className="bg-gray-800/50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500 mb-1">{item.label}</div>
+                    <p className="text-sm text-gray-200 leading-relaxed">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-violet-900/20 border border-violet-800/30 rounded-lg p-3">
+                <div className="text-xs text-violet-400 mb-1 font-medium">👁 Hierarquia Visual</div>
+                <p className="text-sm text-gray-200">{s.imagem_layout.hierarquia_visual}</p>
+              </div>
+              {s.imagem_layout.notas_layout && (
+                <div className="bg-amber-900/20 border border-amber-800/30 rounded-lg p-3">
+                  <div className="text-xs text-amber-400 mb-1">📝 Notas de Layout</div>
+                  <p className="text-sm text-gray-200">{s.imagem_layout.notas_layout}</p>
+                </div>
+              )}
+            </div>
+          </SectionCard>
+        )}
+
+        {isImageCreative && s.imagem_texto && (
+          <SectionCard number={6} title="Texto da Imagem" icon="✍️"
+            copyContent={`Headline: ${s.imagem_texto.headline}\n\nSubheadline: ${s.imagem_texto.subheadline}\n\nCTA: ${s.imagem_texto.cta}`}>
+            <div className="space-y-3">
+              <div className="bg-gray-800/50 rounded-xl p-4 group flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="text-xs text-gray-500 mb-1 font-medium">HEADLINE PRINCIPAL</div>
+                  <p className="text-xl text-white font-bold leading-tight">{s.imagem_texto.headline}</p>
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <CopyButton text={s.imagem_texto.headline} />
+                </div>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl p-4 group flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="text-xs text-gray-500 mb-1 font-medium">SUBHEADLINE</div>
+                  <p className="text-sm text-gray-200 leading-relaxed">{s.imagem_texto.subheadline}</p>
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <CopyButton text={s.imagem_texto.subheadline} />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="bg-violet-600 text-white text-sm font-bold px-5 py-2.5 rounded-lg">
+                  {s.imagem_texto.cta}
+                </div>
+                <CopyButton text={s.imagem_texto.cta} />
+              </div>
+            </div>
+          </SectionCard>
+        )}
+
+        {isImageCreative && s.imagem_variacoes && s.imagem_variacoes.length > 0 && (
+          <SectionCard number={7} title="Variações — 3 Versões" icon="🔀"
+            copyContent={s.imagem_variacoes.map(v =>
+              `${v.nome}\nHeadline: ${v.headline}\nÂngulo: ${v.angulo}\nEmoção: ${v.emocao}`
+            ).join('\n\n')}>
+            <div className="space-y-3">
+              {s.imagem_variacoes.map((v, i) => (
+                <div key={i} className="bg-gray-800/50 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-violet-400">{v.nome}</span>
+                    <span className="text-xs px-2 py-0.5 bg-gray-700 rounded-full text-gray-300">{v.emocao}</span>
+                  </div>
+                  <p className="text-base text-white font-bold mb-2">{v.headline}</p>
+                  <p className="text-xs text-gray-400">{v.angulo}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {isImageCreative && s.imagem_estilo && (
+          <SectionCard number={8} title="Estilo Visual" icon="🎨"
+            copyContent={[
+              `Fundo: ${s.imagem_estilo.fundo}`,
+              `Estilo: ${s.imagem_estilo.estilo}`,
+              `Fonte: ${s.imagem_estilo.fonte}`,
+              `Contraste: ${s.imagem_estilo.contraste}`,
+              `Elementos: ${s.imagem_estilo.elementos_visuais}`,
+            ].join('\n')}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: '🎨 Fundo', value: s.imagem_estilo.fundo },
+                { label: '✨ Estilo', value: s.imagem_estilo.estilo },
+                { label: 'Aa Fonte', value: s.imagem_estilo.fonte },
+                { label: '◐ Contraste', value: s.imagem_estilo.contraste },
+                { label: '🔧 Elementos Visuais', value: s.imagem_estilo.elementos_visuais },
+              ].map(item => (
+                <div key={item.label} className={`bg-gray-800/50 rounded-lg p-3 ${item.label === '🔧 Elementos Visuais' ? 'sm:col-span-2' : ''}`}>
+                  <div className="text-xs text-gray-500 mb-1">{item.label}</div>
+                  <p className="text-sm text-gray-200 leading-relaxed">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {isImageCreative && s.imagem_referencia && (
+          <SectionCard number={9} title="Referência Visual / Canva" icon="🖌️"
+            copyContent={[
+              s.imagem_referencia.descricao,
+              `\nInstruções Canva:\n${s.imagem_referencia.instrucoes_canva}`,
+              `\nCores: ${s.imagem_referencia.cores_hex?.join(', ') ?? ''}`,
+              `\nExemplos: ${s.imagem_referencia.exemplos_visuais}`,
+            ].join('\n')}>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-200 leading-relaxed">{s.imagem_referencia.descricao}</p>
+              {s.imagem_referencia.cores_hex && s.imagem_referencia.cores_hex.length > 0 && (
+                <div>
+                  <div className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Paleta de Cores</div>
+                  <div className="flex gap-2 flex-wrap">
+                    {s.imagem_referencia.cores_hex.map((hex, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-1.5">
+                        <span className="w-4 h-4 rounded-full border border-gray-700 flex-shrink-0" style={{ backgroundColor: hex }} />
+                        <span className="text-xs text-gray-300 font-mono">{hex}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
+                <div className="text-xs text-blue-400 mb-2 font-medium">📐 Instruções para o Canva/Figma</div>
+                <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-line">{s.imagem_referencia.instrucoes_canva}</p>
+              </div>
+              <div className="bg-gray-800/50 rounded-lg p-3">
+                <div className="text-xs text-gray-500 mb-1">Exemplos de referência</div>
+                <p className="text-sm text-gray-200 leading-relaxed">{s.imagem_referencia.exemplos_visuais}</p>
+              </div>
+            </div>
+          </SectionCard>
+        )}
+
+        {/* VIDEO SECTIONS */}
+        {!isImageCreative && s.cenas && s.cenas.length > 0 && (
+          <SectionCard number={4} title="Cenas — Cena a Cena" icon="🎬"
+            copyContent={s.cenas.map(c =>
+              `Cena ${c.numero} (${c.duracao})\nFala: ${c.texto_falado}\nTela: ${c.texto_tela}\nEnquadramento: ${c.enquadramento}${c.notas ? `\nNotas: ${c.notas}` : ''}`
+            ).join('\n\n')}>
+            <div className="space-y-3">
+              {s.cenas.map((cena) => (
+                <div key={cena.numero} className="bg-gray-800/50 rounded-xl overflow-hidden">
+                  <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-700/50">
+                    <span className="text-xs font-bold text-violet-400 bg-violet-900/30 px-2 py-0.5 rounded-full">
+                      Cena {cena.numero}
+                    </span>
+                    <span className="text-xs text-gray-500">{cena.duracao}</span>
+                    <span className="text-xs text-gray-600 ml-auto">{cena.enquadramento}</span>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">🎙 Texto falado</p>
+                      <p className="text-sm text-white font-medium leading-relaxed">{cena.texto_falado}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">📺 Texto na tela</p>
+                      <p className="text-sm text-gray-200 leading-relaxed">{cena.texto_tela}</p>
+                    </div>
+                    {cena.notas && (
+                      <div className="sm:col-span-2">
+                        <p className="text-xs text-gray-500 mb-1">📝 Notas</p>
+                        <p className="text-xs text-amber-300 leading-relaxed">{cena.notas}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* 4/5. Variações de roteiro */}
+        <SectionCard number={isImageCreative ? 10 : (s.cenas?.length ? 5 : 4)} title="Variações de Roteiro" icon="🔀"
           copyContent={s.variacoes_roteiro.map(v => `${v.nome}:\n${v.roteiro}`).join('\n\n')}>
           <div className="space-y-4">
             {s.variacoes_roteiro.map((v, i) => (
@@ -573,8 +877,8 @@ export default function CriativoDetalhe() {
           </div>
         </SectionCard>
 
-        {/* 5. Texto do anúncio */}
-        <SectionCard number={5} title="Texto do Anúncio" icon="✍️"
+        {/* Texto do anúncio */}
+        <SectionCard number={isImageCreative ? 11 : 5} title="Texto do Anúncio" icon="✍️"
           copyContent={[
             'TEXTOS PRINCIPAIS:', ...s.texto_anuncio.textos_principais.map((t, i) => `${i + 1}. ${t}`),
             '\nHEADLINES:', ...s.texto_anuncio.headlines.map((h, i) => `${i + 1}. ${h}`),
@@ -614,25 +918,35 @@ export default function CriativoDetalhe() {
           </div>
         </SectionCard>
 
-        {/* 6. Direção Criativa */}
-        <SectionCard number={6} title="Direção Criativa" icon="🎥"
+        {/* 6. Direção Criativa / Direção de Design */}
+        <SectionCard
+          number={isImageCreative ? 12 : 6}
+          title={isImageCreative ? 'Direção de Design' : 'Direção Criativa'}
+          icon={isImageCreative ? '🖌️' : '🎥'}
           copyContent={[
-            `Como gravar: ${s.direcao_criativa.como_gravar}`,
-            `Cenário: ${s.direcao_criativa.cenario}`,
-            `Pessoa: ${s.direcao_criativa.tipo_pessoa}`,
+            `${isImageCreative ? 'Diretrizes' : 'Como gravar'}: ${s.direcao_criativa.como_gravar}`,
+            `${isImageCreative ? 'Fundo' : 'Cenário'}: ${s.direcao_criativa.cenario}`,
+            `${isImageCreative ? 'Imagem' : 'Tipo de Pessoa'}: ${s.direcao_criativa.tipo_pessoa}`,
             `Estilo: ${s.direcao_criativa.estilo}`,
-            `Tom de voz: ${s.direcao_criativa.tom_voz}`,
-            `Edição: ${s.direcao_criativa.edicao}`,
+            `${isImageCreative ? 'Tom' : 'Tom de Voz'}: ${s.direcao_criativa.tom_voz}`,
+            `${isImageCreative ? 'Ajustes finais' : 'Edição'}: ${s.direcao_criativa.edicao}`,
           ].join('\n')}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
+            {(isImageCreative ? [
+              { label: 'Diretrizes Visuais', value: s.direcao_criativa.como_gravar },
+              { label: 'Background / Fundo', value: s.direcao_criativa.cenario },
+              { label: 'Imagem / Foto', value: s.direcao_criativa.tipo_pessoa },
+              { label: 'Estilo Visual', value: s.direcao_criativa.estilo },
+              { label: 'Tom', value: s.direcao_criativa.tom_voz },
+              { label: 'Ajustes Finais', value: s.direcao_criativa.edicao },
+            ] : [
               { label: 'Como Gravar', value: s.direcao_criativa.como_gravar },
               { label: 'Cenário', value: s.direcao_criativa.cenario },
               { label: 'Tipo de Pessoa', value: s.direcao_criativa.tipo_pessoa },
               { label: 'Estilo', value: s.direcao_criativa.estilo },
               { label: 'Tom de Voz', value: s.direcao_criativa.tom_voz },
               { label: 'Edição', value: s.direcao_criativa.edicao },
-            ].map(item => (
+            ]).map(item => (
               <div key={item.label} className="bg-gray-800/50 rounded-lg p-3">
                 <div className="text-xs text-gray-500 mb-1">{item.label}</div>
                 <p className="text-sm text-gray-200 leading-relaxed">{item.value}</p>
@@ -641,10 +955,70 @@ export default function CriativoDetalhe() {
           </div>
         </SectionCard>
 
-        {/* 7. Referência Visual */}
-        <SectionCard number={7} title="Referência Visual" icon="🖼️" copyContent={s.referencia_visual}>
-          <p className="text-sm text-gray-200 leading-relaxed">{s.referencia_visual}</p>
-        </SectionCard>
+        {/* 7. Direção de Gravação (video only) */}
+        {!isImageCreative && s.direcao_gravacao && (
+          <SectionCard number={7} title="Direção de Gravação" icon="🎥"
+            copyContent={[
+              `Quem: ${s.direcao_gravacao.quem}`,
+              `Onde: ${s.direcao_gravacao.onde}`,
+              `Tom de voz: ${s.direcao_gravacao.tom_voz}`,
+              `Expressão: ${s.direcao_gravacao.expressao}`,
+              s.direcao_gravacao.equipamento ? `Equipamento: ${s.direcao_gravacao.equipamento}` : '',
+              s.direcao_gravacao.observacoes ? `Observações: ${s.direcao_gravacao.observacoes}` : '',
+            ].filter(Boolean).join('\n')}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Quem grava', value: s.direcao_gravacao.quem, icon: '👤' },
+                { label: 'Onde gravar', value: s.direcao_gravacao.onde, icon: '📍' },
+                { label: 'Tom de voz', value: s.direcao_gravacao.tom_voz, icon: '🎙' },
+                { label: 'Expressão', value: s.direcao_gravacao.expressao, icon: '😐' },
+                ...(s.direcao_gravacao.equipamento ? [{ label: 'Equipamento', value: s.direcao_gravacao.equipamento, icon: '📷' }] : []),
+                ...(s.direcao_gravacao.observacoes ? [{ label: 'Observações', value: s.direcao_gravacao.observacoes, icon: '📝' }] : []),
+              ].map(item => (
+                <div key={item.label} className="bg-gray-800/50 rounded-lg p-3">
+                  <div className="text-xs text-gray-500 mb-1">{item.icon} {item.label}</div>
+                  <p className="text-sm text-gray-200 leading-relaxed">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* 8. Direção de Edição (video only) */}
+        {!isImageCreative && s.direcao_edicao && (
+          <SectionCard number={8} title="Direção de Edição" icon="✂️"
+            copyContent={[
+              `Cortes: ${s.direcao_edicao.cortes}`,
+              `Legendas: ${s.direcao_edicao.legendas}`,
+              `Zoom: ${s.direcao_edicao.zoom}`,
+              `Música: ${s.direcao_edicao.musica}`,
+              `Ritmo: ${s.direcao_edicao.ritmo}`,
+              s.direcao_edicao.transicoes ? `Transições: ${s.direcao_edicao.transicoes}` : '',
+            ].filter(Boolean).join('\n')}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Cortes', value: s.direcao_edicao.cortes, icon: '✂️' },
+                { label: 'Legendas', value: s.direcao_edicao.legendas, icon: '💬' },
+                { label: 'Zoom', value: s.direcao_edicao.zoom, icon: '🔍' },
+                { label: 'Música', value: s.direcao_edicao.musica, icon: '🎵' },
+                { label: 'Ritmo', value: s.direcao_edicao.ritmo, icon: '⚡' },
+                ...(s.direcao_edicao.transicoes ? [{ label: 'Transições', value: s.direcao_edicao.transicoes, icon: '🔄' }] : []),
+              ].map(item => (
+                <div key={item.label} className="bg-gray-800/50 rounded-lg p-3">
+                  <div className="text-xs text-gray-500 mb-1">{item.icon} {item.label}</div>
+                  <p className="text-sm text-gray-200 leading-relaxed">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Referência Visual (video only — images have imagem_referencia) */}
+        {!isImageCreative && (
+          <SectionCard number={s.direcao_edicao ? 9 : 7} title="Referência Visual" icon="🖼️" copyContent={s.referencia_visual}>
+            <p className="text-sm text-gray-200 leading-relaxed">{s.referencia_visual}</p>
+          </SectionCard>
+        )}
 
         {/* 8. Variações de Teste */}
         <SectionCard number={8} title="Variações de Teste" icon="🧪"

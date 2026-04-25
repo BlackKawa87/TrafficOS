@@ -10,6 +10,7 @@ const en = {
   'nav.metrics': 'Metrics',
   'nav.decisions': 'AI Decisions',
   'nav.plan': 'Daily Plan',
+  'nav.landing': 'Landing Pages',
   'nav.prompts': 'Prompt Center',
   'nav.settings': 'Settings',
 
@@ -248,6 +249,7 @@ const pt: Record<keyof typeof en, string> = {
   'nav.metrics': 'Métricas',
   'nav.decisions': 'Decisões IA',
   'nav.plan': 'Plano Diário',
+  'nav.landing': 'Landing Pages',
   'nav.prompts': 'Prompt Center',
   'nav.settings': 'Configurações',
 

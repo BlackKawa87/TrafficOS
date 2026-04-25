@@ -13,7 +13,12 @@ import NovoCriativo from './traffic/pages/NovoCriativo'
 import CriativoDetalhe from './traffic/pages/CriativoDetalhe'
 import Metricas from './traffic/pages/Metricas'
 import DecisoesIA from './traffic/pages/DecisoesIA'
+import DecisoesDetalhe from './traffic/pages/DecisoesDetalhe'
 import PlanoDiario from './traffic/pages/PlanoDiario'
+import PlanoDetalhe from './traffic/pages/PlanoDetalhe'
+import GerarMixCriativo from './traffic/pages/GerarMixCriativo'
+import LandingPages from './traffic/pages/LandingPages'
+import LandingPageDetalhe from './traffic/pages/LandingPageDetalhe'
 import PromptCenter from './traffic/pages/PromptCenter'
 import Configuracoes from './traffic/pages/Configuracoes'
 import NovaMetrica from './traffic/pages/NovaMetrica'
@@ -33,12 +38,17 @@ function App() {
           <Route path="campanhas/nova" element={<NovaCampanha />} />
           <Route path="campanhas/:id" element={<CampanhaDetalhe />} />
           <Route path="criativos" element={<Criativos />} />
+          <Route path="criativos/mix" element={<GerarMixCriativo />} />
           <Route path="criativos/novo" element={<NovoCriativo />} />
           <Route path="criativos/:id" element={<CriativoDetalhe />} />
           <Route path="metricas" element={<Metricas />} />
           <Route path="metricas/novo" element={<NovaMetrica />} />
           <Route path="decisoes" element={<DecisoesIA />} />
+          <Route path="decisoes/:id" element={<DecisoesDetalhe />} />
           <Route path="plano-diario" element={<PlanoDiario />} />
+          <Route path="plano-diario/:id" element={<PlanoDetalhe />} />
+          <Route path="landing-page" element={<LandingPages />} />
+          <Route path="landing-page/:id" element={<LandingPageDetalhe />} />
           <Route path="prompt-center" element={<PromptCenter />} />
           <Route path="configuracoes" element={<Configuracoes />} />
         </Route>

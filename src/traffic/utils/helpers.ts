@@ -57,6 +57,32 @@ export function getStatusColor(status: string): string {
     low: 'bg-gray-700 text-gray-300',
     medium: 'bg-amber-900/50 text-amber-300',
     high: 'bg-red-900/50 text-red-400',
+    critical: 'bg-red-800 text-red-200',
+    accepted: 'bg-emerald-900/50 text-emerald-300',
+    ignored: 'bg-gray-700 text-gray-400',
+    executed: 'bg-blue-900/50 text-blue-300',
+    archived: 'bg-gray-800 text-gray-500',
+    // Daily plan/task
+    hoje: 'bg-red-900/50 text-red-300',
+    proximas_24h: 'bg-amber-900/50 text-amber-300',
+    proximos_3_dias: 'bg-blue-900/50 text-blue-300',
+    escala: 'bg-emerald-900/50 text-emerald-300',
+    correcao: 'bg-violet-900/50 text-violet-300',
+    // Decision types
+    pausar_criativo: 'bg-red-900/50 text-red-400',
+    manter_criativo: 'bg-amber-900/50 text-amber-300',
+    escalar_criativo: 'bg-green-900/50 text-green-400',
+    duplicar_campanha: 'bg-violet-900/50 text-violet-300',
+    criar_variacao: 'bg-cyan-900/50 text-cyan-300',
+    trocar_hook: 'bg-orange-900/50 text-orange-300',
+    trocar_publico: 'bg-pink-900/50 text-pink-300',
+    revisar_oferta: 'bg-yellow-900/50 text-yellow-300',
+    revisar_pagina: 'bg-blue-900/50 text-blue-300',
+    criar_remarketing: 'bg-indigo-900/50 text-indigo-300',
+    aumentar_orcamento: 'bg-emerald-900/50 text-emerald-300',
+    reduzir_orcamento: 'bg-amber-900/50 text-amber-300',
+    encerrar_campanha: 'bg-red-900/50 text-red-400',
+    coletar_dados: 'bg-gray-700 text-gray-300',
   }
   return colors[status] ?? 'bg-gray-700 text-gray-300'
 }
@@ -173,14 +199,89 @@ export const FORMAT_LABELS: Record<string, string> = {
 }
 
 export const DECISION_TYPE_LABELS: Record<string, string> = {
+  pausar_criativo: 'Pausar Criativo',
+  manter_criativo: 'Manter em Teste',
+  escalar_criativo: 'Escalar Criativo',
+  duplicar_campanha: 'Duplicar Campanha',
+  criar_variacao: 'Criar Variação',
+  trocar_hook: 'Trocar Hook',
+  trocar_publico: 'Trocar Público',
+  revisar_oferta: 'Revisar Oferta',
+  revisar_pagina: 'Revisar Página',
+  criar_remarketing: 'Criar Remarketing',
+  aumentar_orcamento: 'Aumentar Orçamento',
+  reduzir_orcamento: 'Reduzir Orçamento',
+  encerrar_campanha: 'Encerrar Campanha',
+  coletar_dados: 'Coletar Dados',
   pause: 'Pausar',
   maintain: 'Manter',
   scale: 'Escalar',
   improve: 'Melhorar',
 }
 
+export const DECISION_TYPE_ICONS: Record<string, string> = {
+  pausar_criativo: '⏸',
+  manter_criativo: '⏳',
+  escalar_criativo: '🚀',
+  duplicar_campanha: '⧉',
+  criar_variacao: '🔀',
+  trocar_hook: '⚡',
+  trocar_publico: '👥',
+  revisar_oferta: '💰',
+  revisar_pagina: '📄',
+  criar_remarketing: '🔁',
+  aumentar_orcamento: '📈',
+  reduzir_orcamento: '📉',
+  encerrar_campanha: '🚫',
+  coletar_dados: '⏱',
+  pause: '⏸',
+  maintain: '✓',
+  scale: '📈',
+  improve: '⚡',
+}
+
+export const DAILY_TASK_CATEGORY_LABELS: Record<string, string> = {
+  hoje: 'Hoje',
+  proximas_24h: 'Próximas 24h',
+  proximos_3_dias: 'Próximos 3 dias',
+  escala: 'Escala',
+  correcao: 'Correção',
+}
+
+export const DAILY_TASK_CATEGORY_ICONS: Record<string, string> = {
+  hoje: '🔥',
+  proximas_24h: '⏰',
+  proximos_3_dias: '📅',
+  escala: '🚀',
+  correcao: '🔧',
+}
+
+export const DAILY_PLAN_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  in_progress: 'Em andamento',
+  done: 'Concluído',
+}
+
+export const DECISION_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  accepted: 'Aceita',
+  ignored: 'Ignorada',
+  executed: 'Executada',
+  archived: 'Arquivada',
+  in_progress: 'Em andamento',
+  done: 'Concluída',
+  dismissed: 'Dispensada',
+}
+
 export const PRIORITY_LABELS: Record<string, string> = {
   low: 'Baixa',
   medium: 'Média',
   high: 'Alta',
+  critical: 'Crítica',
+}
+
+export const CONFIDENCE_LABELS: Record<string, string> = {
+  baixo: 'Baixa confiança',
+  medio: 'Média confiança',
+  alto: 'Alta confiança',
 }

@@ -1,6 +1,6 @@
-import type { Product, OfferDiagnosis, Campaign, Creative, Metric, AIDecision, PromptTemplate, AIOfferDiagnosis, AICampaign, AICreative, PerformanceInsight } from '../types'
+import type { Product, OfferDiagnosis, Campaign, Creative, Metric, AIDecision, PromptTemplate, AIOfferDiagnosis, AICampaign, AICreative, PerformanceInsight, DailyPlan, LandingPage } from '../types'
 
-const SEEDS_KEY = 'tos_seeds_v6'
+const SEEDS_KEY = 'tos_seeds_v9'
 
 const DEFAULT_PROMPTS: Omit<PromptTemplate, 'id' | 'created_at' | 'updated_at'>[] = [
   {
@@ -231,6 +231,174 @@ Sempre diferencie:
 - Problema de tracking`,
   },
   {
+    name: 'Gerador de Landing Page Executável',
+    category: 'Landing Page e Conversão',
+    description: 'Gera landing page completa com wireframe por blocos, copy posicionada, direção de design, paleta de cores e versão mobile.',
+    variables: ['productData', 'offerDiagnosis'],
+    template: `Você é um especialista em design de landing pages de alta conversão, copywriting de resposta direta e UX para tráfego pago.
+
+Sua função é gerar uma landing page COMPLETA e EXECUTÁVEL — wireframe, layout, copy posicionada e direção de design.
+
+Produto:
+{{productData}}
+
+Diagnóstico de oferta:
+{{offerDiagnosis}}
+
+Gere:
+
+1. WIREFRAME POR BLOCOS
+Para cada bloco (Hero, Problema, Solução, Benefícios, Prova, Oferta, CTA Final):
+- Posição dos elementos
+- Tamanho relativo
+- Espaçamento
+- Hierarquia visual
+
+2. COPY JÁ POSICIONADA
+Headline, subheadline, corpo, lista de itens, CTA — tudo dentro de cada bloco.
+
+3. DIREÇÃO DE DESIGN
+- Paleta de cores (hex codes)
+- Tipografia
+- Estilo visual
+- Estilo de botão
+- Estilo de imagens
+
+4. VERSÃO MOBILE
+O que muda, ordem das seções, ajustes de tamanho.
+
+5. NOTAS DE CONVERSÃO
+Recomendações estratégicas para aumentar conversão.
+
+Seja específico. Nada genérico. Use os dados reais do produto.`,
+  },
+  {
+    name: 'Plano Diário de Execução',
+    category: 'Planejamento e Execução',
+    description: 'Transforma dados, campanhas, criativos e decisões em tarefas práticas organizadas por prioridade para execução diária.',
+    variables: ['productData', 'offerDiagnosis', 'campaignData', 'creativeData', 'metricsData', 'decisionData'],
+    template: `Você é um gestor de tráfego e estrategista de crescimento orientado a execução.
+
+Sua função é transformar dados e decisões em um plano de ação claro, objetivo e executável.
+
+Dados do produto:
+{{productData}}
+
+Diagnóstico de oferta:
+{{offerDiagnosis}}
+
+Campanhas:
+{{campaignData}}
+
+Criativos:
+{{creativeData}}
+
+Métricas:
+{{metricsData}}
+
+Decisões IA pendentes:
+{{decisionData}}
+
+Gere:
+
+1. Resumo do cenário atual (o que está acontecendo, o que funciona, o que falha)
+
+2. Prioridade principal do dia
+Defina o foco e o motivo estratégico.
+
+3. Lista de tarefas imediatas (hoje)
+Para cada tarefa: descrição específica, prioridade, tempo estimado e impacto esperado.
+
+4. Tarefas para próximas 24h
+
+5. Tarefas para próximos 3 dias
+
+6. Ações de escala (se houver sinais positivos)
+
+7. Ações de correção (se houver problemas)
+
+8. Alertas importantes
+
+9. Próximo passo estratégico
+
+Regras:
+- Máximo 15 tarefas
+- Priorize impacto sobre volume
+- Evite tarefas genéricas — use os dados reais
+- Se dados forem insuficientes, avisar claramente
+- Diferenciar problema de criativo, oferta, página e público`,
+  },
+  {
+    name: 'Motor de Decisão Estratégica de Tráfego',
+    category: 'Decisões e Otimização',
+    description: 'Analisa produto, campanhas, criativos e métricas com regras estratégicas avançadas para gerar decisões priorizadas com risco, confiança e prazo.',
+    variables: ['productData', 'offerDiagnosis', 'campaignData', 'creativeData', 'metricsData'],
+    template: `Você é um gestor sênior de tráfego pago, growth strategist e analista de performance.
+
+Sua função é analisar dados de produtos, ofertas, campanhas, criativos e métricas para gerar decisões práticas, críticas e acionáveis.
+
+Dados do produto:
+{{productData}}
+
+Diagnóstico de oferta:
+{{offerDiagnosis}}
+
+Campanhas ativas:
+{{campaignData}}
+
+Criativos em teste:
+{{creativeData}}
+
+Métricas de performance:
+{{metricsData}}
+
+TIPOS DE DECISÃO DISPONÍVEIS:
+- pausar_criativo: CTR baixo, ROAS negativo, alto gasto sem retorno
+- manter_criativo: CPA dentro da meta mas volume baixo, aguardar dados
+- escalar_criativo: CPA bom, ROAS positivo, potencial claro de escala
+- duplicar_campanha: Campanha com resultados positivos para replicar
+- criar_variacao: Criativo com bom CTR que pode melhorar conversão
+- trocar_hook: Hook fraco (CTR baixo), bom produto
+- trocar_publico: CTR bom mas conversão baixa, público errado
+- revisar_oferta: Muitos cliques, poucas vendas, problema na promessa
+- revisar_pagina: CTR alto, baixa conversão, problema na página
+- criar_remarketing: Muito tráfego, poucos compradores, oportunidade de retargeting
+- aumentar_orcamento: Resultados sólidos, escalar budget
+- reduzir_orcamento: CPA alto, ROAS negativo, reduzir exposição
+- encerrar_campanha: Campanha sem resultados após período de teste adequado
+- coletar_dados: Poucos dados, aguardar antes de decidir
+
+REGRAS DE ANÁLISE:
+- CTR < 1% + CPC alto → trocar_hook ou pausar_criativo
+- CTR > 2% + conversão < 1% → revisar_pagina ou revisar_oferta
+- Gasto > $50 + zero venda → pausar_criativo (critical)
+- CPA bom + ROAS ≥ 2x → escalar_criativo ou aumentar_orcamento
+- CPA aceitável + volume baixo → manter_criativo
+- Amostra < 1000 impressões → coletar_dados (alerte que amostra é pequena)
+
+ALERTAS OBRIGATÓRIOS:
+- Se amostra < 1000 impressões ou < $20 gasto: alerte no reasoning
+- Sempre diferencie: problema de criativo, oferta, página, público ou tracking
+- Não force conclusões onde os dados são fracos — seja honesto sobre incerteza
+
+LIMITE: Máximo 6 decisões mais relevantes, priorizadas por impacto no ROI.
+
+Para cada decisão, gere:
+1. Título curto e descritivo
+2. Tipo de decisão (da lista acima)
+3. Prioridade: critical | high | medium | low
+4. Justificativa baseada nos dados reais
+5. Métricas que justificam (CTR X%, ROAS Xx, gasto $X, etc)
+6. Nível de confiança: baixo | medio | alto
+7. Risco de tomar ou não tomar esta decisão
+8. Ação recomendada imediata e específica
+9. Próximo passo após executar a ação
+10. Prazo: Agora | Hoje | Próximas 24h | Próximos 3 dias | Próxima semana
+11. Lista de 2-3 ações executáveis
+
+Seja crítico, direto e orientado para ROI. Não gere recomendações genéricas.`,
+  },
+  {
     name: 'Gerador de Criativos de Alta Conversão',
     category: 'Criação de Criativos',
     description: 'Gera criativos completos para campanhas de tráfego pago com base em produto, campanha e diagnóstico de oferta.',
@@ -313,6 +481,8 @@ const KEYS = {
   creatives: 'tos_creatives',
   metrics: 'tos_metrics',
   decisions: 'tos_decisions',
+  dailyPlans: 'tos_daily_plans',
+  landingPages: 'tos_landing_pages',
   prompts: 'tos_prompts',
 }
 
@@ -519,6 +689,42 @@ export const tosDb = {
     },
     delete: (id: string): void =>
       saveAll(KEYS.aiCampaigns, getAll<AICampaign>(KEYS.aiCampaigns).filter(c => c.id !== id)),
+  },
+
+  landingPages: {
+    getAll: (): LandingPage[] => getAll<LandingPage>(KEYS.landingPages),
+    getByProduct: (productId: string): LandingPage[] =>
+      getAll<LandingPage>(KEYS.landingPages).filter(lp => lp.product_id === productId),
+    getById: (id: string): LandingPage | null =>
+      getAll<LandingPage>(KEYS.landingPages).find(lp => lp.id === id) ?? null,
+    save: (lp: LandingPage): void => {
+      const all = getAll<LandingPage>(KEYS.landingPages)
+      const idx = all.findIndex(x => x.id === lp.id)
+      if (idx >= 0) all[idx] = lp
+      else all.push(lp)
+      saveAll(KEYS.landingPages, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.landingPages, getAll<LandingPage>(KEYS.landingPages).filter(lp => lp.id !== id)),
+  },
+
+  dailyPlans: {
+    getAll: (): DailyPlan[] => getAll<DailyPlan>(KEYS.dailyPlans),
+    getByProduct: (productId: string): DailyPlan[] =>
+      getAll<DailyPlan>(KEYS.dailyPlans).filter(p => p.product_id === productId),
+    getById: (id: string): DailyPlan | null =>
+      getAll<DailyPlan>(KEYS.dailyPlans).find(p => p.id === id) ?? null,
+    getByDate: (date: string): DailyPlan[] =>
+      getAll<DailyPlan>(KEYS.dailyPlans).filter(p => p.date === date),
+    save: (p: DailyPlan): void => {
+      const all = getAll<DailyPlan>(KEYS.dailyPlans)
+      const idx = all.findIndex(x => x.id === p.id)
+      if (idx >= 0) all[idx] = p
+      else all.push(p)
+      saveAll(KEYS.dailyPlans, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.dailyPlans, getAll<DailyPlan>(KEYS.dailyPlans).filter(p => p.id !== id)),
   },
 
   reAggregateCreative: (creativeId: string): void => {
