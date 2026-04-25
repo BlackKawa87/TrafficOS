@@ -1,92 +1,235 @@
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { useLanguage } from '../i18n'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { tosDb, generateId, now } from '../store/storage'
-import { formatCurrency, formatDate, formatNumber } from '../utils/helpers'
-import { Modal } from '../components/Modal'
-import type { Metric } from '../types'
+import {
+  formatCurrency,
+  formatDate,
+  formatNumber,
+  getStatusColor,
+  CREATIVE_CHANNEL_LABELS,
+  AI_CREATIVE_STATUS_LABELS,
+} from '../utils/helpers'
+import type { PerformanceInsight } from '../types'
 
-const CURRENCIES = ['USD', 'BRL', 'EUR', 'GBP']
+const CHANNELS = ['meta_ads', 'tiktok_ads', 'google_search', 'google_display', 'youtube_ads', 'native_ads']
 
-const EMPTY_FORM = {
-  product_id: '',
-  campaign_id: '',
-  date: new Date().toISOString().split('T')[0],
-  spend: 0,
-  revenue: 0,
-  impressions: 0,
-  clicks: 0,
-  conversions: 0,
-  currency: 'USD',
-  notes: '',
+function KpiCard({ label, value, sub, color = 'white' }: { label: string; value: string; sub?: string; color?: string }) {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">{label}</div>
+      <div className={`text-lg font-bold ${color}`}>{value}</div>
+      {sub && <div className="text-[10px] text-gray-600 mt-0.5">{sub}</div>}
+    </div>
+  )
+}
+
+function RankTable({
+  title, icon, rows, valueKey, valueFormat, ascending,
+}: {
+  title: string
+  icon: string
+  rows: Array<{ id: string; name: string; value: number; product: string; status: string }>
+  valueKey: string
+  valueFormat: (n: number) => string
+  ascending?: boolean
+}) {
+  const sorted = [...rows]
+    .filter(r => r.value > 0)
+    .sort((a, b) => ascending ? a.value - b.value : b.value - a.value)
+    .slice(0, 10)
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800">
+        <span>{icon}</span>
+        <span className="text-sm font-semibold text-white">{title}</span>
+      </div>
+      {sorted.length === 0 ? (
+        <div className="p-6 text-center text-gray-600 text-xs">Sem dados ainda</div>
+      ) : (
+        <div className="divide-y divide-gray-800/50">
+          {sorted.map((row, i) => (
+            <div key={row.id} className="flex items-center gap-3 px-4 py-2.5">
+              <span className="text-xs text-gray-600 w-4 flex-shrink-0">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-white truncate">{row.name}</div>
+                <div className="text-[10px] text-gray-600 truncate">{row.product}</div>
+              </div>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${getStatusColor(row.status)}`}>
+                {AI_CREATIVE_STATUS_LABELS[row.status] ?? row.status}
+              </span>
+              <span className={`text-xs font-semibold flex-shrink-0 ${
+                valueKey === 'cpa' ? 'text-emerald-400' :
+                row.value >= 2 ? 'text-emerald-400' :
+                row.value >= 1 ? 'text-amber-400' : 'text-white'
+              }`}>
+                {valueFormat(row.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Metricas() {
-  const { t } = useLanguage()
-  const [searchParams] = useSearchParams()
-  const preselectedProduct = searchParams.get('produto') ?? ''
+  const navigate = useNavigate()
 
-  const [modalOpen, setModalOpen] = useState(false)
-  const [form, setForm] = useState({ ...EMPTY_FORM, product_id: preselectedProduct })
-  const [productFilter, setProductFilter] = useState(preselectedProduct)
+  const [productFilter, setProductFilter] = useState('')
   const [campaignFilter, setCampaignFilter] = useState('')
+  const [channelFilter, setChannelFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
-  const metrics = tosDb.metrics.getAll()
+  const [insightsLoading, setInsightsLoading] = useState(false)
+  const [insightsPanel, setInsightsPanel] = useState<PerformanceInsight | null>(null)
+
+  const allMetrics = tosDb.metrics.getAll()
+  const allCreatives = tosDb.aiCreatives.getAll()
   const products = tosDb.products.getAll()
+  const aiCampaigns = tosDb.aiCampaigns.getAll()
 
-  useEffect(() => {
-    if (preselectedProduct) setModalOpen(true)
-  }, [preselectedProduct])
+  const filtered = allMetrics.filter(m => {
+    if (productFilter && m.product_id !== productFilter) return false
+    if (campaignFilter && m.campaign_id !== campaignFilter) return false
+    if (channelFilter && m.channel !== channelFilter) return false
+    if (dateFrom && m.date < dateFrom) return false
+    if (dateTo && m.date > dateTo) return false
+    return true
+  }).sort((a, b) => b.date.localeCompare(a.date))
 
-  const filteredCampaigns = form.product_id
-    ? tosDb.campaigns.getByProduct(form.product_id)
-    : tosDb.campaigns.getAll()
-
-  const filtered = metrics
-    .filter(m => (!productFilter || m.product_id === productFilter) && (!campaignFilter || m.campaign_id === campaignFilter))
-    .sort((a, b) => b.date.localeCompare(a.date))
-
-  // Aggregates
+  // KPIs from filtered metric records
   const totalSpend = filtered.reduce((s, m) => s + m.spend, 0)
   const totalRevenue = filtered.reduce((s, m) => s + m.revenue, 0)
   const totalImpressions = filtered.reduce((s, m) => s + m.impressions, 0)
   const totalClicks = filtered.reduce((s, m) => s + m.clicks, 0)
+  const totalLeads = filtered.reduce((s, m) => s + (m.leads ?? 0), 0)
   const totalConversions = filtered.reduce((s, m) => s + m.conversions, 0)
   const avgRoas = totalSpend > 0 ? totalRevenue / totalSpend : 0
   const avgCpa = totalConversions > 0 ? totalSpend / totalConversions : 0
   const avgCpc = totalClicks > 0 ? totalSpend / totalClicks : 0
   const avgCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0
 
-  function handleSave() {
-    const roas = form.spend > 0 ? form.revenue / form.spend : 0
-    const cpa = form.conversions > 0 ? form.spend / form.conversions : 0
-    const cpc = form.clicks > 0 ? form.spend / form.clicks : 0
-    const ctr = form.impressions > 0 ? (form.clicks / form.impressions) * 100 : 0
+  // Creative stats from aggregated creative data
+  const filteredCreatives = allCreatives.filter(c => {
+    if (productFilter && c.product_id !== productFilter) return false
+    if (campaignFilter && c.campaign_id !== campaignFilter) return false
+    if (channelFilter && c.channel !== channelFilter) return false
+    return c.spend > 0
+  })
+  const winners = filteredCreatives.filter(c => c.status === 'vencedor' || c.status === 'escalar').length
+  const losers = filteredCreatives.filter(c => c.status === 'perdedor' || c.status === 'pausado').length
 
-    const metric: Metric = {
-      id: generateId(),
-      ...form,
-      roas,
-      cpa,
-      cpc,
-      ctr,
-      created_at: now(),
+  // Ranking rows
+  const rankRows = filteredCreatives.map(c => ({
+    id: c.id,
+    name: c.strategy?.nome ?? c.id,
+    product: products.find(p => p.id === c.product_id)?.name ?? '—',
+    status: c.status,
+    ctr: c.ctr,
+    roas: c.roas,
+    cpa: c.cpa,
+    spend: c.spend,
+  }))
+
+  // Worst by spend: high spend + low ROAS
+  const worstBySpend = [...filteredCreatives]
+    .filter(c => c.spend > 0)
+    .sort((a, b) => {
+      const scoreA = a.spend * (1 / Math.max(a.roas, 0.01))
+      const scoreB = b.spend * (1 / Math.max(b.roas, 0.01))
+      return scoreB - scoreA
+    })
+    .slice(0, 10)
+    .map(c => ({
+      id: c.id,
+      name: c.strategy?.nome ?? c.id,
+      product: products.find(p => p.id === c.product_id)?.name ?? '—',
+      status: c.status,
+      value: c.spend,
+    }))
+
+  async function generateInsights() {
+    setInsightsLoading(true)
+    try {
+      const topCreatives = filteredCreatives
+        .sort((a, b) => b.spend - a.spend)
+        .slice(0, 20)
+        .map(c => ({
+          nome: c.strategy?.nome,
+          canal: c.channel,
+          angulo: c.angle,
+          status: c.status,
+          ctr: c.ctr.toFixed(2),
+          cpc: c.cpc.toFixed(2),
+          cpa: c.cpa.toFixed(2),
+          roas: c.roas.toFixed(2),
+          gasto: c.spend.toFixed(2),
+          receita: c.revenue.toFixed(2),
+          hook_type: c.learning?.hook_type ?? '',
+          promise_type: c.learning?.promise_type ?? '',
+        }))
+
+      const recentMetrics = filtered.slice(0, 30).map(m => ({
+        data: m.date,
+        canal: m.channel,
+        gasto: m.spend,
+        receita: m.revenue,
+        roas: m.roas.toFixed(2),
+        ctr: m.ctr.toFixed(2),
+        cpa: m.cpa.toFixed(2),
+      }))
+
+      const prompt = `Analise os dados de performance desta conta de tráfego pago e gere insights estratégicos.
+
+RESUMO GERAL:
+- Total gasto: ${formatCurrency(totalSpend)}
+- Total receita: ${formatCurrency(totalRevenue)}
+- ROAS médio: ${avgRoas.toFixed(2)}x
+- CPA médio: ${formatCurrency(avgCpa)}
+- CTR médio: ${avgCtr.toFixed(2)}%
+- Criativos vencedores: ${winners}
+- Criativos perdedores: ${losers}
+
+TOP CRIATIVOS (por gasto):
+${JSON.stringify(topCreatives, null, 2)}
+
+MÉTRICAS RECENTES:
+${JSON.stringify(recentMetrics, null, 2)}`
+
+      const res = await fetch('/api/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ insightsData: prompt }),
+      })
+
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json() as { insights: PerformanceInsight }
+      const insight: PerformanceInsight = {
+        ...data.insights,
+        id: generateId(),
+        generated_at: now(),
+      }
+      tosDb.insights.save(insight)
+      setInsightsPanel(insight)
+    } catch {
+      alert('Erro ao gerar insights. Tente novamente.')
+    } finally {
+      setInsightsLoading(false)
     }
-    tosDb.metrics.save(metric)
-    setModalOpen(false)
-    setForm({ ...EMPTY_FORM, product_id: productFilter })
-    window.location.reload()
+  }
+
+  function loadLastInsight() {
+    const last = tosDb.insights.getLatest()
+    if (last) setInsightsPanel(last)
   }
 
   function handleDelete(id: string) {
-    if (confirm(t('common.confirm_delete'))) {
+    if (confirm('Excluir este registro de métricas?')) {
       tosDb.metrics.delete(id)
       window.location.reload()
     }
-  }
-
-  function set<K extends keyof typeof EMPTY_FORM>(key: K, value: (typeof EMPTY_FORM)[K]) {
-    setForm(prev => ({ ...prev, [key]: value }))
   }
 
   return (
@@ -94,266 +237,332 @@ export default function Metricas() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">{t('metr.title')}</h1>
-          <p className="text-gray-400 text-sm mt-1">{metrics.length} registros de métricas</p>
+          <h1 className="text-2xl font-bold text-white">Métricas</h1>
+          <p className="text-gray-400 text-sm mt-1">{allMetrics.length} registros · {allCreatives.filter(c => c.spend > 0).length} criativos com dados</p>
         </div>
         <button
-          onClick={() => { setForm({ ...EMPTY_FORM, product_id: productFilter }); setModalOpen(true) }}
+          onClick={() => navigate('/metricas/novo')}
           className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors"
         >
-          + {t('metr.new')}
+          + Nova Métrica
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+      <div className="flex flex-wrap gap-3 mb-6">
         <select
           value={productFilter}
           onChange={e => { setProductFilter(e.target.value); setCampaignFilter('') }}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500"
         >
-          <option value="">{t('common.all')} Produtos</option>
+          <option value="">Todos os produtos</option>
           {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <select
           value={campaignFilter}
           onChange={e => setCampaignFilter(e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500"
         >
-          <option value="">{t('common.all')} Campanhas</option>
-          {(productFilter ? tosDb.campaigns.getByProduct(productFilter) : tosDb.campaigns.getAll()).map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+          <option value="">Todas as campanhas</option>
+          {(productFilter ? aiCampaigns.filter(c => c.product_id === productFilter) : aiCampaigns).map(c => (
+            <option key={c.id} value={c.id}>{c.strategy?.nome_estrategico ?? c.id}</option>
           ))}
         </select>
+        <select
+          value={channelFilter}
+          onChange={e => setChannelFilter(e.target.value)}
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500"
+        >
+          <option value="">Todos os canais</option>
+          {CHANNELS.map(ch => (
+            <option key={ch} value={ch}>{CREATIVE_CHANNEL_LABELS[ch] ?? ch}</option>
+          ))}
+        </select>
+        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500" />
+        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+          className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500" />
+        {(productFilter || campaignFilter || channelFilter || dateFrom || dateTo) && (
+          <button
+            onClick={() => { setProductFilter(''); setCampaignFilter(''); setChannelFilter(''); setDateFrom(''); setDateTo('') }}
+            className="text-xs text-gray-500 hover:text-white px-3 py-2 bg-gray-800 rounded-lg"
+          >
+            Limpar
+          </button>
+        )}
       </div>
 
-      {/* Aggregated KPIs */}
-      {filtered.length > 0 && (
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 mb-5">
-          {[
-            { label: t('metr.spend'), value: formatCurrency(totalSpend) },
-            { label: t('metr.revenue'), value: formatCurrency(totalRevenue) },
-            { label: t('metr.roas'), value: avgRoas > 0 ? `${avgRoas.toFixed(2)}x` : '—' },
-            { label: t('metr.cpa'), value: avgCpa > 0 ? formatCurrency(avgCpa) : '—' },
-            { label: t('metr.cpc'), value: avgCpc > 0 ? formatCurrency(avgCpc) : '—' },
-            { label: t('metr.ctr'), value: avgCtr > 0 ? `${avgCtr.toFixed(2)}%` : '—' },
-            { label: t('metr.clicks'), value: formatNumber(totalClicks) },
-            { label: t('metr.conversions'), value: formatNumber(totalConversions) },
-          ].map(kpi => (
-            <div key={kpi.label} className="bg-gray-900 border border-gray-800 rounded-xl p-3">
-              <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{kpi.label}</div>
-              <div className="text-sm font-bold text-white">{kpi.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        <KpiCard label="Gasto Total" value={formatCurrency(totalSpend)} />
+        <KpiCard label="Receita Total" value={formatCurrency(totalRevenue)}
+          color={totalRevenue > totalSpend ? 'text-emerald-400' : 'text-white'} />
+        <KpiCard label="ROAS Médio" value={avgRoas > 0 ? `${avgRoas.toFixed(2)}x` : '—'}
+          color={avgRoas >= 2 ? 'text-emerald-400' : avgRoas >= 1 ? 'text-amber-400' : 'text-red-400'} />
+        <KpiCard label="CPA Médio" value={avgCpa > 0 ? formatCurrency(avgCpa) : '—'} />
+        <KpiCard label="CTR Médio" value={avgCtr > 0 ? `${avgCtr.toFixed(2)}%` : '—'} />
+        <KpiCard label="CPC Médio" value={avgCpc > 0 ? formatCurrency(avgCpc) : '—'} />
+        <KpiCard label="Conversões" value={formatNumber(totalConversions)} />
+        <KpiCard label="Leads" value={formatNumber(totalLeads)} />
+        <KpiCard label="Vencedores" value={String(winners)}
+          color="text-emerald-400" sub="vencedor + escalar" />
+        <KpiCard label="Perdedores" value={String(losers)}
+          color={losers > 0 ? 'text-red-400' : 'text-white'} sub="perdedor + pausado" />
+      </div>
 
-      {/* Table */}
-      {filtered.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
-          <p className="text-gray-500">{t('metr.no_data')}</p>
-          <button onClick={() => setModalOpen(true)} className="mt-4 text-violet-400 hover:text-violet-300 text-sm">
-            + {t('metr.new')}
+      {/* AI Insights */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-3">
+          <h2 className="text-base font-semibold text-white">Insights de IA</h2>
+          <button
+            onClick={generateInsights}
+            disabled={insightsLoading || filteredCreatives.length === 0}
+            className="text-xs px-4 py-1.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          >
+            {insightsLoading ? (
+              <>
+                <span className="animate-spin text-[10px]">⟳</span>
+                Analisando...
+              </>
+            ) : '✦ Gerar Insights'}
           </button>
+          {tosDb.insights.getLatest() && !insightsPanel && (
+            <button onClick={loadLastInsight} className="text-xs text-gray-500 hover:text-gray-300">
+              Ver último
+            </button>
+          )}
+          {insightsPanel && (
+            <button onClick={() => setInsightsPanel(null)} className="text-xs text-gray-500 hover:text-gray-300">
+              Fechar
+            </button>
+          )}
         </div>
-      ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs">Data</th>
-                  <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs">Produto</th>
-                  <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs">Campanha</th>
-                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">{t('metr.spend')}</th>
-                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">{t('metr.revenue')}</th>
-                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">{t('metr.roas')}</th>
-                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">{t('metr.cpa')}</th>
-                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">{t('metr.impressions')}</th>
-                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">{t('metr.clicks')}</th>
-                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">{t('metr.conversions')}</th>
-                  <th className="py-3 px-4"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(m => {
-                  const product = tosDb.products.getById(m.product_id)
-                  const campaign = m.campaign_id ? tosDb.campaigns.getById(m.campaign_id) : null
-                  return (
-                    <tr key={m.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                      <td className="py-3 px-4 text-gray-300 text-xs">{formatDate(m.date)}</td>
-                      <td className="py-3 px-4 text-gray-300 text-xs">{product?.name ?? '—'}</td>
-                      <td className="py-3 px-4 text-gray-400 text-xs">{campaign?.name ?? '—'}</td>
-                      <td className="py-3 px-4 text-right text-white text-xs">{formatCurrency(m.spend, m.currency)}</td>
-                      <td className="py-3 px-4 text-right text-xs">
-                        <span className={m.revenue > m.spend ? 'text-emerald-400' : 'text-white'}>
-                          {formatCurrency(m.revenue, m.currency)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-xs">
-                        <span className={m.roas >= 2 ? 'text-emerald-400' : m.roas >= 1 ? 'text-amber-400' : 'text-red-400'}>
-                          {m.roas > 0 ? `${m.roas.toFixed(2)}x` : '—'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-gray-300 text-xs">
-                        {m.cpa > 0 ? formatCurrency(m.cpa, m.currency) : '—'}
-                      </td>
-                      <td className="py-3 px-4 text-right text-gray-400 text-xs">{formatNumber(m.impressions)}</td>
-                      <td className="py-3 px-4 text-right text-gray-400 text-xs">{formatNumber(m.clicks)}</td>
-                      <td className="py-3 px-4 text-right text-gray-400 text-xs">{formatNumber(m.conversions)}</td>
-                      <td className="py-3 px-4">
-                        <button onClick={() => handleDelete(m.id)} className="text-xs text-gray-600 hover:text-red-400 transition-colors">
-                          {t('common.delete')}
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-              {/* Totals row */}
-              <tfoot>
-                <tr className="border-t border-gray-700 bg-gray-800/30">
-                  <td colSpan={3} className="py-3 px-4 text-xs font-semibold text-gray-400">{t('metr.totals')}</td>
-                  <td className="py-3 px-4 text-right text-xs font-semibold text-white">{formatCurrency(totalSpend)}</td>
-                  <td className="py-3 px-4 text-right text-xs font-semibold text-white">{formatCurrency(totalRevenue)}</td>
-                  <td className="py-3 px-4 text-right text-xs font-semibold text-white">
-                    {avgRoas > 0 ? `${avgRoas.toFixed(2)}x` : '—'}
-                  </td>
-                  <td className="py-3 px-4 text-right text-xs font-semibold text-white">
-                    {avgCpa > 0 ? formatCurrency(avgCpa) : '—'}
-                  </td>
-                  <td className="py-3 px-4 text-right text-xs font-semibold text-gray-300">{formatNumber(totalImpressions)}</td>
-                  <td className="py-3 px-4 text-right text-xs font-semibold text-gray-300">{formatNumber(totalClicks)}</td>
-                  <td className="py-3 px-4 text-right text-xs font-semibold text-gray-300">{formatNumber(totalConversions)}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
+
+        {insightsPanel && (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs font-medium text-emerald-400 mb-1 uppercase tracking-wide">O que funciona</div>
+                <p className="text-sm text-gray-200 leading-relaxed">{insightsPanel.o_que_funciona}</p>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-red-400 mb-1 uppercase tracking-wide">O que falha</div>
+                <p className="text-sm text-gray-200 leading-relaxed">{insightsPanel.o_que_falha}</p>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-violet-400 mb-1 uppercase tracking-wide">Hooks que performam</div>
+                <p className="text-sm text-gray-200 leading-relaxed">{insightsPanel.hooks_que_performam}</p>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-amber-400 mb-1 uppercase tracking-wide">Ângulos que convertem</div>
+                <p className="text-sm text-gray-200 leading-relaxed">{insightsPanel.angulos_que_convertem}</p>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-blue-400 mb-1 uppercase tracking-wide">Melhores canais</div>
+                <p className="text-sm text-gray-200 leading-relaxed">{insightsPanel.melhores_canais}</p>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-cyan-400 mb-1 uppercase tracking-wide">Produtos com potencial</div>
+                <p className="text-sm text-gray-200 leading-relaxed">{insightsPanel.produtos_com_potencial}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-800">
+              <div>
+                <div className="text-xs font-medium text-red-400 mb-2 uppercase tracking-wide">Pausar</div>
+                <div className="space-y-1">
+                  {insightsPanel.criativos_pausar.map((c, i) => (
+                    <div key={i} className="text-xs text-gray-300 flex items-center gap-2">
+                      <span className="text-red-500">•</span> {c}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-cyan-400 mb-2 uppercase tracking-wide">Criar variações</div>
+                <div className="space-y-1">
+                  {insightsPanel.criativos_variar.map((c, i) => (
+                    <div key={i} className="text-xs text-gray-300 flex items-center gap-2">
+                      <span className="text-cyan-500">•</span> {c}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-violet-400 mb-2 uppercase tracking-wide">Próximos testes</div>
+                <div className="space-y-1">
+                  {insightsPanel.proximos_testes.map((t, i) => (
+                    <div key={i} className="text-xs text-gray-300 flex items-center gap-2">
+                      <span className="text-violet-500">→</span> {t}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="text-[10px] text-gray-600 text-right">
+              Gerado em {new Date(insightsPanel.generated_at).toLocaleString('pt-BR')}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Rankings */}
+      {filteredCreatives.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-base font-semibold text-white mb-3">Rankings de Criativos</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <RankTable
+              title="Top CTR"
+              icon="👆"
+              rows={rankRows.map(r => ({ ...r, value: r.ctr }))}
+              valueKey="ctr"
+              valueFormat={n => `${n.toFixed(2)}%`}
+            />
+            <RankTable
+              title="Top ROAS"
+              icon="💰"
+              rows={rankRows.map(r => ({ ...r, value: r.roas }))}
+              valueKey="roas"
+              valueFormat={n => `${n.toFixed(2)}x`}
+            />
+            <RankTable
+              title="Melhor CPA"
+              icon="🎯"
+              rows={rankRows.filter(r => r.cpa > 0).map(r => ({ ...r, value: r.cpa }))}
+              valueKey="cpa"
+              valueFormat={n => formatCurrency(n)}
+              ascending
+            />
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800">
+                <span>🔥</span>
+                <span className="text-sm font-semibold text-white">Maior Gasto / Menor ROAS</span>
+              </div>
+              {worstBySpend.length === 0 ? (
+                <div className="p-6 text-center text-gray-600 text-xs">Sem dados ainda</div>
+              ) : (
+                <div className="divide-y divide-gray-800/50">
+                  {worstBySpend.map((row, i) => (
+                    <div key={row.id} className="flex items-center gap-3 px-4 py-2.5">
+                      <span className="text-xs text-gray-600 w-4 flex-shrink-0">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-white truncate">{row.name}</div>
+                        <div className="text-[10px] text-gray-600 truncate">{row.product}</div>
+                      </div>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${getStatusColor(row.status)}`}>
+                        {AI_CREATIVE_STATUS_LABELS[row.status] ?? row.status}
+                      </span>
+                      <span className="text-xs font-semibold text-red-400 flex-shrink-0">
+                        {formatCurrency(row.value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('metr.new')}>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Produto</label>
-              <select
-                value={form.product_id}
-                onChange={e => { set('product_id', e.target.value); set('campaign_id', '') }}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
-              >
-                <option value="">— Selecionar —</option>
-                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Campanha</label>
-              <select
-                value={form.campaign_id}
-                onChange={e => set('campaign_id', e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
-              >
-                <option value="">— Nenhuma —</option>
-                {filteredCampaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Data *</label>
-              <input
-                type="date"
-                value={form.date}
-                onChange={e => set('date', e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Moeda</label>
-              <select
-                value={form.currency}
-                onChange={e => set('currency', e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
-              >
-                {CURRENCIES.map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">{t('metr.spend')}</label>
-              <input type="number" min="0" step="0.01" value={form.spend || ''} onChange={e => set('spend', parseFloat(e.target.value) || 0)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">{t('metr.revenue')}</label>
-              <input type="number" min="0" step="0.01" value={form.revenue || ''} onChange={e => set('revenue', parseFloat(e.target.value) || 0)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">{t('metr.impressions')}</label>
-              <input type="number" min="0" value={form.impressions || ''} onChange={e => set('impressions', parseInt(e.target.value) || 0)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">{t('metr.clicks')}</label>
-              <input type="number" min="0" value={form.clicks || ''} onChange={e => set('clicks', parseInt(e.target.value) || 0)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">{t('metr.conversions')}</label>
-              <input type="number" min="0" value={form.conversions || ''} onChange={e => set('conversions', parseInt(e.target.value) || 0)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500" />
-            </div>
-          </div>
-          {/* Auto-computed preview */}
-          {form.spend > 0 && (
-            <div className="bg-gray-800/50 rounded-lg p-3 grid grid-cols-4 gap-2">
-              <div>
-                <div className="text-[10px] text-gray-500">ROAS</div>
-                <div className="text-sm font-bold text-white">
-                  {form.revenue > 0 ? `${(form.revenue / form.spend).toFixed(2)}x` : '—'}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-gray-500">CPA</div>
-                <div className="text-sm font-bold text-white">
-                  {form.conversions > 0 ? formatCurrency(form.spend / form.conversions, form.currency) : '—'}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-gray-500">CPC</div>
-                <div className="text-sm font-bold text-white">
-                  {form.clicks > 0 ? formatCurrency(form.spend / form.clicks, form.currency) : '—'}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-gray-500">CTR</div>
-                <div className="text-sm font-bold text-white">
-                  {form.impressions > 0 ? `${((form.clicks / form.impressions) * 100).toFixed(2)}%` : '—'}
-                </div>
-              </div>
-            </div>
-          )}
-          <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">{t('common.notes')}</label>
-            <textarea rows={2} value={form.notes} onChange={e => set('notes', e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 resize-none" />
-          </div>
-          <div className="flex gap-3 justify-end pt-2">
-            <button onClick={() => setModalOpen(false)} className="px-4 py-2.5 text-sm text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-              {t('common.cancel')}
-            </button>
-            <button onClick={handleSave} className="px-5 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors">
-              {t('common.save')}
+      {/* Metrics Table */}
+      <div>
+        <h2 className="text-base font-semibold text-white mb-3">Registros de Métricas</h2>
+        {filtered.length === 0 ? (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+            <p className="text-gray-500 mb-3">Nenhum registro encontrado.</p>
+            <button
+              onClick={() => navigate('/metricas/novo')}
+              className="text-violet-400 hover:text-violet-300 text-sm"
+            >
+              + Inserir primeira métrica
             </button>
           </div>
-        </div>
-      </Modal>
+        ) : (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-800">
+                    <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs">Data</th>
+                    <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs">Produto</th>
+                    <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs">Campanha</th>
+                    <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs">Canal</th>
+                    <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">Gasto</th>
+                    <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">Receita</th>
+                    <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">ROAS</th>
+                    <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">CPA</th>
+                    <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">CTR</th>
+                    <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">Cliques</th>
+                    <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs">Conv.</th>
+                    <th className="py-3 px-4"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(m => {
+                    const product = products.find(p => p.id === m.product_id)
+                    const campaign = m.campaign_id ? aiCampaigns.find(c => c.id === m.campaign_id) : null
+                    return (
+                      <tr key={m.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                        <td className="py-3 px-4 text-gray-300 text-xs whitespace-nowrap">{formatDate(m.date)}</td>
+                        <td className="py-3 px-4 text-gray-300 text-xs">{product?.name ?? '—'}</td>
+                        <td className="py-3 px-4 text-gray-400 text-xs truncate max-w-[120px]">
+                          {campaign?.strategy?.nome_estrategico ?? '—'}
+                        </td>
+                        <td className="py-3 px-4 text-gray-400 text-xs">
+                          {m.channel ? (CREATIVE_CHANNEL_LABELS[m.channel] ?? m.channel) : '—'}
+                        </td>
+                        <td className="py-3 px-4 text-right text-white text-xs">{formatCurrency(m.spend, m.currency)}</td>
+                        <td className="py-3 px-4 text-right text-xs">
+                          <span className={m.revenue > m.spend ? 'text-emerald-400' : 'text-white'}>
+                            {formatCurrency(m.revenue, m.currency)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right text-xs">
+                          <span className={m.roas >= 2 ? 'text-emerald-400' : m.roas >= 1 ? 'text-amber-400' : 'text-red-400'}>
+                            {m.roas > 0 ? `${m.roas.toFixed(2)}x` : '—'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right text-gray-300 text-xs">
+                          {m.cpa > 0 ? formatCurrency(m.cpa, m.currency) : '—'}
+                        </td>
+                        <td className="py-3 px-4 text-right text-gray-300 text-xs">
+                          {m.ctr > 0 ? `${m.ctr.toFixed(2)}%` : '—'}
+                        </td>
+                        <td className="py-3 px-4 text-right text-gray-400 text-xs">{formatNumber(m.clicks)}</td>
+                        <td className="py-3 px-4 text-right text-gray-400 text-xs">{formatNumber(m.conversions)}</td>
+                        <td className="py-3 px-4">
+                          <button onClick={() => handleDelete(m.id)}
+                            className="text-xs text-gray-600 hover:text-red-400 transition-colors">
+                            Excluir
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-gray-700 bg-gray-800/30">
+                    <td colSpan={4} className="py-3 px-4 text-xs font-semibold text-gray-400">Totais</td>
+                    <td className="py-3 px-4 text-right text-xs font-semibold text-white">{formatCurrency(totalSpend)}</td>
+                    <td className="py-3 px-4 text-right text-xs font-semibold text-white">{formatCurrency(totalRevenue)}</td>
+                    <td className="py-3 px-4 text-right text-xs font-semibold text-white">
+                      {avgRoas > 0 ? `${avgRoas.toFixed(2)}x` : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-right text-xs font-semibold text-white">
+                      {avgCpa > 0 ? formatCurrency(avgCpa) : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-right text-xs font-semibold text-white">
+                      {avgCtr > 0 ? `${avgCtr.toFixed(2)}%` : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-right text-xs font-semibold text-gray-300">{formatNumber(totalClicks)}</td>
+                    <td className="py-3 px-4 text-right text-xs font-semibold text-gray-300">{formatNumber(totalConversions)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

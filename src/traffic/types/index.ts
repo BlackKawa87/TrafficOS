@@ -87,9 +87,12 @@ export interface Metric {
   id: string
   product_id: string
   campaign_id: string
+  creative_id: string
   date: string
+  channel: string
   spend: number
   revenue: number
+  leads: number
   impressions: number
   clicks: number
   conversions: number
@@ -98,6 +101,7 @@ export interface Metric {
   cpc: number
   ctr: number
   currency: string
+  qualitative_comments: string
   notes: string
   created_at: string
 }
@@ -120,6 +124,328 @@ export interface PromptTemplate {
   description: string
   template: string
   variables: string[]
+  created_at: string
+  updated_at: string
+}
+
+export interface OfferAnalysis {
+  nota_geral: {
+    score: number
+    justificativa: string
+    dimensoes: {
+      clareza_promessa: number
+      forca_dor: number
+      urgencia: number
+      diferenciacao: number
+      facilidade_anuncio: number
+      potencial_escala: number
+      risco_conversao: number
+    }
+  }
+  avatar: {
+    perfil: string
+    nivel_consciencia: string
+    deseja: string
+    teme: string
+    ja_tentou: string
+    gatilho_compra: string
+  }
+  big_idea: string
+  promessa_ajustada: string
+  mecanismo_unico: string
+  dores: string[]
+  desejos: string[]
+  objecoes: Array<{ objecao: string; resposta: string }>
+  angulos: Array<{ tipo: string; titulo: string; descricao: string }>
+  canais: Array<{
+    canal: string
+    porque: string
+    criativo: string
+    risco: string
+    prioridade: 'alta' | 'media' | 'baixa'
+  }>
+  oferta_recomendada: {
+    trial: string
+    garantia: string
+    bonus: string
+    desconto: string
+    plano_mensal_anual: string
+    upsell: string
+    downsell: string
+    order_bump: string
+    remarketing: string
+  }
+  riscos: string[]
+  plano_validacao: {
+    objetivo: string
+    orcamento: string
+    quantidade_criativos: number
+    duracao: string
+    metricas_principais: string[]
+    criterio_promissor: string
+    criterio_pausar: string
+  }
+  resumo_executivo: {
+    o_que_esta_bom: string
+    o_que_melhorar: string
+    proximo_passo: string
+  }
+}
+
+export interface AIOfferDiagnosis {
+  id: string
+  product_id: string
+  product_data_snapshot: string
+  analysis: OfferAnalysis
+  created_at: string
+}
+
+// ─── AI Campaign Generator ────────────────────────────────────────────────────
+
+export type CampaignObjectiveType =
+  | 'teste_criativo'
+  | 'validacao_oferta'
+  | 'captacao_leads'
+  | 'vendas_conversao'
+  | 'remarketing'
+  | 'escala'
+  | 'awareness'
+  | 'trafego_pagina'
+
+export type CampaignChannelType =
+  | 'meta_ads'
+  | 'tiktok_ads'
+  | 'google_search'
+  | 'google_display'
+  | 'youtube_ads'
+  | 'native_ads'
+  | 'instagram_organico'
+  | 'email_marketing'
+  | 'whatsapp_telegram'
+
+export type CampaignPhaseType =
+  | 'teste_inicial'
+  | 'pre_validacao'
+  | 'validacao'
+  | 'pre_escala'
+  | 'escala'
+  | 'remarketing'
+  | 'recuperacao'
+
+export type AICampaignStatus = 'rascunho' | 'ativa' | 'pausada' | 'encerrada' | 'vencedora'
+
+export interface CampaignStrategy {
+  nome_estrategico: string
+  objetivo_recomendado: {
+    adequado: boolean
+    justificativa: string
+    ajuste_sugerido: string
+  }
+  hipotese_principal: string
+  publico: {
+    principal: string
+    secundarios: string[]
+    interesses: string[]
+    exclusoes: string[]
+    observacoes: string
+    broad_vs_segmentado: string
+  }
+  angulo_principal: {
+    tipo: string
+    descricao: string
+    aplicacao: string
+  }
+  angulos_secundarios: Array<{ tipo: string; descricao: string }>
+  estrutura: {
+    num_campanhas: number
+    num_conjuntos: number
+    criativos_por_conjunto: number
+    tipo_otimizacao: string
+    estrategia_orcamento: string
+  }
+  criativos_necessarios: {
+    quantidade: number
+    formatos: string[]
+    duracao_videos: string
+    tipo_imagem: string
+    tipo_copy: string
+    tipo_hook: string
+  }
+  copies: {
+    textos_principais: string[]
+    headlines: string[]
+    descricoes: string[]
+    ctas: string[]
+  }
+  landing_page: {
+    avaliacao: string
+    acima_dobra: string
+    promessa: string
+    prova_garantia: string
+  }
+  metricas: {
+    ctr_minimo: string
+    cpc_maximo: string
+    cpa_alvo: string
+    taxa_conversao: string
+    roas_esperado: string
+  }
+  regras_decisao: {
+    pausar: string
+    manter: string
+    duplicar: string
+    escalar: string
+    variacoes: string
+  }
+  plano_3_dias: {
+    dia1: string
+    dia2: string
+    dia3: string
+  }
+  proximo_passo: string
+}
+
+// ─── AI Creative Generator ───────────────────────────────────────────────────
+
+export type CreativeChannelType =
+  | 'meta_ads'
+  | 'tiktok_ads'
+  | 'google_display'
+  | 'youtube_ads'
+  | 'native_ads'
+  | 'instagram_organico'
+
+export type CreativeTypeType =
+  | 'video_curto'
+  | 'video_longo'
+  | 'imagem'
+  | 'carrossel'
+  | 'ugc'
+  | 'story'
+
+export type CreativeObjectiveType =
+  | 'captar_atencao'
+  | 'gerar_cliques'
+  | 'gerar_leads'
+  | 'converter_venda'
+  | 'retargeting'
+
+export type AICreativeStatus = 'novo' | 'em_teste' | 'vencedor' | 'perdedor' | 'pausado' | 'reciclar' | 'escalar'
+
+export interface CreativeLearning {
+  hook_type: string
+  promise_type: string
+  dominant_emotion: string
+  proof_type: string
+}
+
+export interface CreativeHistoryEntry {
+  date: string
+  type: 'status' | 'metrics' | 'note'
+  description: string
+}
+
+export interface PerformanceInsight {
+  id: string
+  generated_at: string
+  o_que_funciona: string
+  o_que_falha: string
+  hooks_que_performam: string
+  angulos_que_convertem: string
+  melhores_canais: string
+  produtos_com_potencial: string
+  criativos_pausar: string[]
+  criativos_variar: string[]
+  proximos_testes: string[]
+}
+
+export interface CreativeStrategy {
+  nome: string
+  ideia_central: string
+  hooks: Array<{ tipo: string; texto: string }>
+  roteiro: {
+    hook: string
+    problema: string
+    agitacao: string
+    solucao: string
+    cta: string
+    duracao: string
+  }
+  variacoes_roteiro: Array<{ nome: string; roteiro: string }>
+  texto_anuncio: {
+    textos_principais: string[]
+    headlines: string[]
+    descricoes: string[]
+    ctas: string[]
+  }
+  direcao_criativa: {
+    como_gravar: string
+    cenario: string
+    tipo_pessoa: string
+    estilo: string
+    tom_voz: string
+    edicao: string
+  }
+  referencia_visual: string
+  variacoes_teste: Array<{ tipo: string; descricao: string }>
+  hipotese: string
+  metricas_esperadas: {
+    ctr_esperado: string
+    cpc_esperado: string
+    cpa_esperado: string
+  }
+  recomendacoes: {
+    quando_usar: string
+    quando_pausar: string
+    quando_escalar: string
+  }
+}
+
+export interface AICreative {
+  id: string
+  product_id: string
+  campaign_id: string
+  channel: CreativeChannelType
+  creative_type: CreativeTypeType
+  objective: CreativeObjectiveType
+  angle: string
+  strategy: CreativeStrategy
+  status: AICreativeStatus
+  // aggregated performance metrics (updated when metric records are saved)
+  spend: number
+  revenue: number
+  impressions: number
+  clicks: number
+  leads: number
+  conversions: number
+  ctr: number
+  cpc: number
+  cpa: number
+  roas: number
+  // learning fields for AI pattern detection
+  learning: CreativeLearning
+  // history of status/metric changes
+  history: CreativeHistoryEntry[]
+  notes: string
+  created_at: string
+  updated_at: string
+}
+
+export interface AICampaign {
+  id: string
+  product_id: string
+  objective: CampaignObjectiveType
+  channel: CampaignChannelType
+  phase: CampaignPhaseType
+  daily_budget: number
+  test_duration: number
+  total_budget_estimate: number
+  currency: string
+  start_date: string
+  strategy: CampaignStrategy
+  status: AICampaignStatus
+  main_result: string
+  notes: string
   created_at: string
   updated_at: string
 }
