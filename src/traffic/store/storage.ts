@@ -1,6 +1,6 @@
 import type { Product, OfferDiagnosis, Campaign, Creative, Metric, AIDecision, PromptTemplate, AIOfferDiagnosis, AICampaign, AICreative, PerformanceInsight } from '../types'
 
-const SEEDS_KEY = 'tos_seeds_v5'
+const SEEDS_KEY = 'tos_seeds_v6'
 
 const DEFAULT_PROMPTS: Omit<PromptTemplate, 'id' | 'created_at' | 'updated_at'>[] = [
   {
@@ -122,6 +122,58 @@ CTR, CPC e CPA esperados.
 Quando usar, quando pausar e quando escalar este criativo.
 
 Seja direto, prático e específico. Use os dados reais do produto. Gere roteiros e copies prontos para execução.`,
+  },
+  {
+    name: 'Gerador de Decisões Estratégicas',
+    category: 'Decisões e Otimização',
+    description: 'Analisa os dados de produto, campanhas, criativos e métricas para gerar decisões estratégicas prioritizadas com ações claras.',
+    variables: ['productData', 'campaignData', 'creativeData', 'metricsData'],
+    template: `Você é um estrategista sênior de tráfego pago e growth marketing.
+
+Sua função é analisar os dados fornecidos e gerar decisões estratégicas claras e prioritizadas para otimizar os resultados.
+
+Dados do produto:
+{{productData}}
+
+Dados das campanhas:
+{{campaignData}}
+
+Dados dos criativos:
+{{creativeData}}
+
+Métricas:
+{{metricsData}}
+
+Com base nos dados acima, gere de 3 a 6 decisões estratégicas priorizadas.
+
+Para cada decisão, informe:
+
+1. Tipo de decisão
+   - pausar: algo que está custando sem retorno
+   - escalar: algo que está performando bem
+   - manter: algo com resultados aceitáveis que deve ser monitorado
+   - melhorar: algo com potencial que precisa de ajuste
+
+2. Raciocínio
+   Explique claramente por que esta decisão é necessária, com base nos dados.
+   Se os dados forem insuficientes, indique esse risco.
+
+3. Ações práticas
+   Liste 2 a 4 ações específicas e executáveis.
+
+4. Prioridade
+   - Alta: ação urgente nas próximas 24h
+   - Média: ação nos próximos 3 dias
+   - Baixa: ação na próxima semana
+
+Seja crítico, direto e orientado para ROI.
+
+Diferencie problemas de:
+- Criativo (hook, copy, roteiro)
+- Oferta (promessa, preço, garantia)
+- Página (landing, checkout)
+- Público (segmentação, exclusões)
+- Tracking (dados incompletos, atribuição)`,
   },
   {
     name: 'Analisador de Performance de Criativos',
