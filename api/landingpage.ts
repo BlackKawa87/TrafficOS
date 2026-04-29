@@ -108,9 +108,8 @@ Retorne APENAS o JSON válido conforme o schema.`,
         },
       ],
     })
-    if (content.type !== 'text') return json({ error: 'Unexpected response type' }, 500)
 
-    let jsonText = text.trim()
+    let jsonText = (response.choices[0].message.content ?? '').trim()
     jsonText = jsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
