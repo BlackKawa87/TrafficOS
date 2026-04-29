@@ -183,7 +183,7 @@ Ao referenciar campanhas ou criativos, use os IDs exatos fornecidos acima.`
       const res = await fetch('/api/decision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decisionData: prompt }),
+        body: JSON.stringify({ decisionData: prompt , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
 
       if (!res.ok) throw new Error('Falha na geração')

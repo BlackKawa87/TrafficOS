@@ -101,7 +101,7 @@ function GeneratorModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
       const res = await fetch('/api/whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contextData }),
+        body: JSON.stringify({ contextData , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
       clearInterval(interval)
       setProgress(100)

@@ -616,7 +616,7 @@ export default function FullAuto() {
       const res = await fetch('/api/full-auto-strategy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionSummary: summary }),
+        body: JSON.stringify({ sessionSummary: summary , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
 
       if (!res.ok) throw new Error('API error')

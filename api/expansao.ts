@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um especialista sênior em expansão multi-canal e growth marketing para tráfego pago.
 
 Sua função é analisar dados de um produto que já tem resultados em um canal e identificar as melhores oportunidades de expansão para novos canais — replicando o que já funciona.
@@ -103,7 +112,7 @@ IMPORTANTE:
 - Identifique o canal atual com melhor performance e use como source_channel
 - Recomende apenas canais NÃO usados atualmente ou usados com baixo volume
 - Personalize cada plano com dados reais do produto
-- Retorne APENAS o JSON válido (array) sem markdown ou texto extra`,
+- Retorne APENAS o JSON válido (array) sem markdown ou texto extra${langLine}`,
         },
       ],
     })

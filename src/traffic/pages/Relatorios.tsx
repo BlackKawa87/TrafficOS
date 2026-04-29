@@ -374,6 +374,7 @@ export default function Relatorios() {
           ...(productName  ? { product_name:  productName  } : {}),
           ...(campaignName ? { campaign_name: campaignName } : {}),
           ...(channel      ? { channel                     } : {}),
+          language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR',
         }),
       })
 

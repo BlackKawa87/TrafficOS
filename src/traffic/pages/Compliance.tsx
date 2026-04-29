@@ -239,6 +239,7 @@ export default function Compliance() {
         niche,
         platforms,
         product_name:      product?.name,
+        language:          localStorage.getItem('tos_ai_lang') ?? 'pt-BR',
       }),
     })
       .then(r => r.json())

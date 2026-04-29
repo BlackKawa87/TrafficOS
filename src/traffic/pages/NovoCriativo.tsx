@@ -290,7 +290,7 @@ export default function NovoCriativo() {
       const resp = await fetch('/api/creative', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creativeData: buildCreativePrompt() }),
+        body: JSON.stringify({ creativeData: buildCreativePrompt() , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
 
       if (!resp.ok) {

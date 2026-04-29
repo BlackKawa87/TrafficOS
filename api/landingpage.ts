@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um especialista em design de landing pages de alta conversão, copywriting de resposta direta e UX para tráfego pago.
 
 Sua função é gerar uma landing page COMPLETA e EXECUTÁVEL — wireframe, layout, copy posicionada e direção de design — pronta para ser criada por qualquer designer ou desenvolvedor sem precisar interpretar.
@@ -88,7 +97,11 @@ const json = (data: unknown, status = 200): Response =>
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  const { landingData } = (await req.json()) as { landingData: string }
+  const { landingData, language } = (await req.json()) as { landingData: string; language?: string }
+
+  const langLine = language && language !== 'pt-BR'
+    ? `\n\nIDIOMA DE RESPOSTA: ${LANG_MAP[language] ?? LANG_MAP['pt-BR']}`
+    : ''
   if (!landingData) return json({ error: 'Missing landingData' }, 400)
 
   try {
@@ -104,7 +117,7 @@ export default async function handler(req: Request): Promise<Response> {
 ${landingData}
 
 IMPORTANTE: use os dados reais do produto. Gere copy pronta para colocar na página. Layout preciso o suficiente para um designer criar sem perguntar nada.
-Retorne APENAS o JSON válido conforme o schema.`,
+Retorne APENAS o JSON válido conforme o schema.${langLine}`,
         },
       ],
     })

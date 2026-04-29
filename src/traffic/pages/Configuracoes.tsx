@@ -9,6 +9,14 @@ export default function Configuracoes() {
   const [defaultCurrency, setDefaultCurrency] = useState(
     localStorage.getItem('tos_default_currency') ?? 'USD'
   )
+  const [aiLang, setAiLang] = useState(
+    localStorage.getItem('tos_ai_lang') ?? 'pt-BR'
+  )
+
+  function handleAiLangChange(l: string) {
+    setAiLang(l)
+    localStorage.setItem('tos_ai_lang', l)
+  }
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
 
@@ -77,9 +85,10 @@ export default function Configuracoes() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-5">
         <h2 className="text-sm font-semibold text-white mb-4">{t('sett.general')}</h2>
         <div className="space-y-5">
-          {/* Language */}
+          {/* UI Language */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-2">{t('sett.language')}</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('sett.language')}</label>
+            <p className="text-[11px] text-gray-600 mb-2">Idioma da interface do sistema</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setLang('pt')}
@@ -101,6 +110,36 @@ export default function Configuracoes() {
               >
                 🇺🇸 English
               </button>
+            </div>
+          </div>
+
+          {/* AI Output Language */}
+          <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1">🤖 Idioma dos Outputs de IA</label>
+            <p className="text-[11px] text-gray-600 mb-2">
+              Idioma em que a IA vai gerar diagnósticos, campanhas, criativos, relatórios e todos os outros conteúdos
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { code: 'pt-BR', flag: '🇧🇷', label: 'Português' },
+                { code: 'en-US', flag: '🇺🇸', label: 'English' },
+                { code: 'es',    flag: '🇪🇸', label: 'Español' },
+                { code: 'fr',    flag: '🇫🇷', label: 'Français' },
+                { code: 'de',    flag: '🇩🇪', label: 'Deutsch' },
+                { code: 'it',    flag: '🇮🇹', label: 'Italiano' },
+              ] as { code: string; flag: string; label: string }[]).map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => handleAiLangChange(l.code)}
+                  className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-colors border ${
+                    aiLang === l.code
+                      ? 'bg-violet-600 text-white border-violet-600'
+                      : 'bg-gray-800 text-gray-400 hover:text-white border-gray-700'
+                  }`}
+                >
+                  {l.flag} {l.label}
+                </button>
+              ))}
             </div>
           </div>
 

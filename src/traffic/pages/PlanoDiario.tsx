@@ -134,7 +134,7 @@ ${JSON.stringify(decisionsSummary, null, 2)}`
       const res = await fetch('/api/plano', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planData }),
+        body: JSON.stringify({ planData , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
 
       clearInterval(interval)

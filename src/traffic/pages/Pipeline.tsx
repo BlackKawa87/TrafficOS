@@ -292,7 +292,7 @@ function LancamentoSummary({ stages }: { stages: PipelineStage[] }) {
 // ─── API callers ──────────────────────────────────────────────────────────────
 async function runDiagnostico(product: { name: string; niche: string; main_promise: string; main_pain: string; main_desire: string; unique_mechanism: string; target_audience: string; price: number; currency: string; language?: string; sales_page_url: string }) {
   const currency = product.currency || localStorage.getItem('tos_default_currency') || 'BRL'
-  const language = product.language || localStorage.getItem('tos_lang') || 'pt-BR'
+  const language = product.language || localStorage.getItem('tos_ai_lang') || 'pt-BR'
   const res = await fetch('/api/diagnose', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -305,7 +305,7 @@ async function runDiagnostico(product: { name: string; niche: string; main_promi
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function runCampanha(product: Record<string, unknown>, diagResult: any) {
   const currency = String(product.currency || localStorage.getItem('tos_default_currency') || 'BRL')
-  const language = String(product.language || localStorage.getItem('tos_lang') || 'pt-BR')
+  const language = String(product.language || localStorage.getItem('tos_ai_lang') || 'pt-BR')
   const phase = 'teste_criativo'
   const currSymbol = currency === 'BRL' ? 'R$' : currency === 'USD' ? 'US$' : currency === 'EUR' ? '€' : '£'
   const minBudget = currency === 'BRL' ? 30 : currency === 'USD' ? 10 : currency === 'EUR' ? 10 : 8

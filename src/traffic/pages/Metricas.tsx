@@ -201,7 +201,7 @@ ${JSON.stringify(recentMetrics, null, 2)}`
       const res = await fetch('/api/insights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ insightsData: prompt }),
+        body: JSON.stringify({ insightsData: prompt , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
 
       if (!res.ok) throw new Error('Failed')

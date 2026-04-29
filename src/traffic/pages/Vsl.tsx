@@ -72,7 +72,7 @@ function GeneratorModal({ products, onClose, onCreated }: GeneratorModalProps) {
       const res = await fetch('/api/vsl', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contextData }),
+        body: JSON.stringify({ contextData , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
 
       const data = await res.json() as { script?: Partial<VslScript>; error?: string }

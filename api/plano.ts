@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um gestor de tráfego e estrategista de crescimento orientado a execução.
 
 Sua função é transformar dados e decisões em um plano de ação claro, objetivo e executável para o dia atual.
@@ -71,7 +80,11 @@ const json = (data: unknown, status = 200): Response =>
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  const { planData } = (await req.json()) as { planData: string }
+  const { planData, language } = (await req.json()) as { planData: string; language?: string }
+
+  const langLine = language && language !== 'pt-BR'
+    ? `\n\nIDIOMA DE RESPOSTA: ${LANG_MAP[language] ?? LANG_MAP['pt-BR']}`
+    : ''
   if (!planData) return json({ error: 'Missing planData' }, 400)
 
   try {
@@ -80,7 +93,7 @@ export default async function handler(req: Request): Promise<Response> {
       max_tokens: 6000,
       messages: [
         { role: 'system' as const, content: SYSTEM_PROMPT },
-        { role: 'user', content: planData },
+        { role: 'user', content: planData + langLine },
       ],
     })
 

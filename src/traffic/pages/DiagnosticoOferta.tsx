@@ -548,7 +548,7 @@ export default function DiagnosticoOferta() {
   const [history, setHistory] = useState<AIOfferDiagnosis[]>([])
   const [diagLang, setDiagLang] = useState<string>(() => {
     // default: product language if set, else UI language, else pt-BR
-    return localStorage.getItem('tos_diag_lang') ?? localStorage.getItem('tos_lang') ?? 'pt-BR'
+    return localStorage.getItem('tos_diag_lang') ?? localStorage.getItem('tos_ai_lang') ?? 'pt-BR'
   })
   const defaultCurrency = localStorage.getItem('tos_default_currency') ?? 'BRL'
 

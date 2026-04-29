@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um gestor sênior de tráfego pago, growth strategist e analista de performance.
 
 Sua função é analisar dados de produtos, ofertas, campanhas, criativos e métricas para gerar decisões práticas, críticas e acionáveis.
@@ -86,7 +95,11 @@ const json = (data: unknown, status = 200): Response =>
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  const { decisionData } = (await req.json()) as { decisionData: string }
+  const { decisionData, language } = (await req.json()) as { decisionData: string; language?: string }
+
+  const langLine = language && language !== 'pt-BR'
+    ? `\n\nIDIOMA DE RESPOSTA: ${LANG_MAP[language] ?? LANG_MAP['pt-BR']}`
+    : ''
   if (!decisionData) return json({ error: 'Missing decisionData' }, 400)
 
   try {
@@ -95,7 +108,7 @@ export default async function handler(req: Request): Promise<Response> {
       max_tokens: 6000,
       messages: [
         { role: 'system' as const, content: SYSTEM_PROMPT },
-        { role: 'user', content: decisionData },
+        { role: 'user', content: decisionData + langLine },
       ],
     })
 

@@ -194,7 +194,7 @@ REQUISITOS OBRIGATÓRIOS:
       const res = await fetch('/api/video-ai-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context }),
+        body: JSON.stringify({ context , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
       if (!res.ok) {
         const err = await res.json()

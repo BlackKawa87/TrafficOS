@@ -673,7 +673,7 @@ export default function AutoTesting() {
       const res = await fetch('/api/auto-testing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creativeData, productData }),
+        body: JSON.stringify({ creativeData, productData , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
       const data = await res.json() as ApiResponse & { error?: string }
       if (!res.ok || data.error) throw new Error(data.error ?? 'Erro desconhecido')

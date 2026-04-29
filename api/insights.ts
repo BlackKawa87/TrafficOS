@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um analista sênior de tráfego pago com expertise em Meta Ads, TikTok Ads e Google Ads.
 
 Analise os dados de performance de criativos e métricas e gere insights estratégicos acionáveis.
@@ -46,7 +55,7 @@ export default async function handler(req: Request): Promise<Response> {
       max_tokens: 4000,
       messages: [
         { role: 'system' as const, content: SYSTEM_PROMPT },
-        { role: 'user', content: insightsData },
+        { role: 'user', content: insightsData + langLine },
       ],
     })
 

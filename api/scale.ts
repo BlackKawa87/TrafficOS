@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um especialista sênior em escala de tráfego pago, otimização de ROI e growth marketing.
 
 Sua função é analisar dados de produtos, campanhas, criativos e métricas e gerar OPORTUNIDADES DE ESCALA E OTIMIZAÇÃO práticas, priorizadas e acionáveis.
@@ -83,7 +92,11 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { contextData } = (await req.json()) as { contextData: string }
+  const { contextData, language } = (await req.json()) as { contextData: string; language?: string }
+
+  const langLine = language && language !== 'pt-BR'
+    ? `\n\nIDIOMA DE RESPOSTA: ${LANG_MAP[language] ?? LANG_MAP['pt-BR']}`
+    : ''
 
   if (!contextData) {
     return json({ error: 'Context data is required' }, 400)
@@ -105,7 +118,7 @@ IMPORTANTE:
 - Use os IDs exatos fornecidos (product_id, campaign_id, creative_id)
 - Baseie cada oportunidade nos dados reais — mencione números específicos
 - Gere de 5 a 10 oportunidades priorizadas por impacto no ROI
-- Retorne APENAS o JSON válido (array) sem markdown ou texto extra`,
+- Retorne APENAS o JSON válido (array) sem markdown ou texto extra${langLine}`,
         },
       ],
     })

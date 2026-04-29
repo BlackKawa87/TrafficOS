@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um motor de previsão de performance de anúncios de tráfego pago. Com base no histórico de aprendizado da conta e na descrição de um novo criativo/campanha, gere previsões precisas de performance.
 
 Suas previsões devem ser baseadas nos padrões históricos da conta — não use números genéricos.
@@ -75,7 +84,7 @@ Canal: ${channel || 'não especificado'}
 Objetivo: ${objective || 'não especificado'}
 Descrição: ${creativeDescription}
 
-Retorne APENAS o JSON válido sem markdown ou texto extra.`,
+Retorne APENAS o JSON válido sem markdown ou texto extra.${langLine}`,
         },
       ],
     })

@@ -149,7 +149,7 @@ Analise todos os elementos acima e retorne o JSON de compliance completo. Seja e
       max_tokens: 3500,
       messages: [
         { role: 'system' as const, content: systemPrompt },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: userPrompt + langLine },
       ],
     })
 

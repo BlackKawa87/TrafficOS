@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um especialista em VSL (Video Sales Letter) de alta conversão, copywriting de resposta direta e direção criativa para vídeos de vendas.
 
 Sua função é criar um ROTEIRO COMPLETO DE VSL com os 13 blocos obrigatórios, texto falado completo e direção de vídeo profissional.
@@ -149,7 +158,7 @@ IMPORTANTE:
 - Use dados específicos do produto: nome real, preço, promessa, mecanismo, dores e público
 - Cada bloco deve ter roteiro PRONTO PARA GRAVAR — natural, sem rodeios
 - texto_completo deve ser o roteiro INTEIRO do início ao fim com marcações [BLOCO]
-- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra`,
+- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra${langLine}`,
         },
       ],
     })

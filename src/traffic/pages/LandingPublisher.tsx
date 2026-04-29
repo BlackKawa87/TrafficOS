@@ -168,7 +168,7 @@ REQUISITOS:
       const res = await fetch('/api/landing-publisher-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context }),
+        body: JSON.stringify({ context , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -230,7 +230,7 @@ INSTRUÇÃO: Gere uma nova variação com ângulo e copy diferentes da anterior.
     fetch('/api/landing-publisher-generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ context }),
+      body: JSON.stringify({ context , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
     })
       .then(r => r.json())
       .then((data: LandingPublisherContent) => {

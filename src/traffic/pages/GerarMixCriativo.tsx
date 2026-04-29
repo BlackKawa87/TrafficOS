@@ -184,7 +184,7 @@ export default function GerarMixCriativo() {
         const resp = await fetch('/api/creative', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ creativeData: buildPrompt(MIX_CONFIGS[i]) }),
+          body: JSON.stringify({ creativeData: buildPrompt(MIX_CONFIGS[i]) , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
         })
 
         if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }

@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um especialista sênior em remarketing, retargeting e recuperação de audiência para tráfego pago.
 
 Sua função é analisar dados de um produto e gerar uma ESTRATÉGIA COMPLETA DE REMARKETING com públicos segmentados, criativos específicos, mensagens por público e plano por fase.
@@ -136,7 +145,7 @@ ${contextData}
 IMPORTANTE:
 - Use os dados reais do produto para personalizar cada público e criativo
 - Gere os 5 públicos obrigatórios com criativos completos
-- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra`,
+- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra${langLine}`,
         },
       ],
     })

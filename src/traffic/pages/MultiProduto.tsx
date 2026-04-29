@@ -520,7 +520,7 @@ export default function MultiProduto() {
       const res = await fetch('/api/multi-produto-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionData }),
+        body: JSON.stringify({ sessionData , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
 
       if (!res.ok) throw new Error('API error')

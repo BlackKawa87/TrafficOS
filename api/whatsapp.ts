@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um especialista sênior em copywriting conversacional, vendas via WhatsApp e automação de mensagens para alta conversão.
 
 Sua função é criar um FLUXO COMPLETO DE 7 MENSAGENS de conversão via WhatsApp/Telegram, com linguagem natural, curta e focada em gerar resposta e converter leads.
@@ -124,7 +133,7 @@ ${contextData}
 IMPORTANTE:
 - Mensagens CURTAS (2-5 linhas max) — estilo WhatsApp real
 - Use dados específicos do produto nos textos
-- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra`,
+- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra${langLine}`,
         },
       ],
     })

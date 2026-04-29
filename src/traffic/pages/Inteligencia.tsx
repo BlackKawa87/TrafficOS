@@ -700,7 +700,7 @@ export default function Inteligencia() {
       const res = await fetch('/api/inteligencia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contextData }),
+        body: JSON.stringify({ contextData , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
       const data = await res.json() as { report?: Partial<IntelligenceReport>; error?: string }
       if (!res.ok || data.error) throw new Error(data.error ?? 'Erro ao gerar relatório')

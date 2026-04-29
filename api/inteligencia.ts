@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um estrategista sênior de tráfego pago, growth hacking e otimização de conversão com experiência em análise de padrões de performance.
 
 Sua função é analisar TODO o histórico da plataforma TrafficOS e gerar um relatório de inteligência competitiva completo, identificando padrões, erros e oportunidades ocultas.
@@ -122,7 +131,7 @@ IMPORTANTE:
 - Use os dados reais para embasar cada insight — não gere análises genéricas
 - Se algum módulo não tiver dados, aponte isso como oportunidade de coletar mais informações
 - Seja crítico: identifique o que está custando dinheiro e o que está sendo perdido
-- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra`,
+- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra${langLine}`,
         },
       ],
     })

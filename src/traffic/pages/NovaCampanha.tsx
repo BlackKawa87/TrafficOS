@@ -152,7 +152,7 @@ export default function NovaCampanha() {
   const preProduct = searchParams.get('produto') ?? ''
 
   const defaultCurrency = localStorage.getItem('tos_default_currency') ?? 'BRL'
-  const uiLang = localStorage.getItem('tos_lang') ?? 'pt-BR'
+  const uiLang = localStorage.getItem('tos_ai_lang') ?? 'pt-BR'
 
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<WizardState>({ ...EMPTY, product_id: preProduct, currency: defaultCurrency })

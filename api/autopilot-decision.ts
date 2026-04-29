@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um gestor sênior de tráfego pago responsável por um sistema de auto-pilot de anúncios em tempo real.
 
 Analise o estado atual da sessão de auto-pilot (campanhas ativas, métricas, ações tomadas, configuração) e gere um diagnóstico estratégico completo.
@@ -66,7 +75,7 @@ export default async function handler(req: Request): Promise<Response> {
         { role: 'system' as const, content: SYSTEM_PROMPT },
         {
           role: 'user',
-          content: `Analise esta sessão de auto-pilot e gere o diagnóstico estratégico:\n\n${sessionData}\n\nRetorne APENAS o JSON válido (objeto) sem markdown ou texto extra.`,
+          content: `Analise esta sessão de auto-pilot e gere o diagnóstico estratégico:\n\n${sessionData}\n\nRetorne APENAS o JSON válido (objeto) sem markdown ou texto extra.${langLine}`,
         },
       ],
     })

@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um especialista sênior em criação de criativos para tráfego pago, com foco em Meta Ads, TikTok Ads e YouTube Ads.
 
 Sua função é gerar um briefing criativo COMPLETO e EXECUTÁVEL — pronto para gravar/produzir e subir sem precisar interpretar.
@@ -185,7 +194,11 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { creativeData } = (await req.json()) as { creativeData: string }
+  const { creativeData, language } = (await req.json()) as { creativeData: string; language?: string }
+
+  const langLine = language && language !== 'pt-BR'
+    ? `\n\nIDIOMA DE RESPOSTA: ${LANG_MAP[language] ?? LANG_MAP['pt-BR']}`
+    : ''
 
   if (!creativeData) {
     return json({ error: 'Creative data is required' }, 400)
@@ -208,7 +221,7 @@ IMPORTANTE:
 - Para VÍDEO: gere cenas cena a cena, direção de gravação e direção de edição detalhadas
 - Para IMAGEM: gere layout exato, texto pronto para imagem, 3 variações, estilo visual e referência Canva
 - Seja 100% específico para este produto. Nada genérico.
-- Retorne APENAS o JSON válido conforme o schema, sem os marcadores [VIDEO] ou [IMAGEM] nas chaves.`,
+- Retorne APENAS o JSON válido conforme o schema, sem os marcadores [VIDEO] ou [IMAGEM] nas chaves.${langLine}`,
         },
       ],
     })

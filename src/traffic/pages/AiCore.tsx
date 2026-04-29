@@ -529,7 +529,7 @@ export default function AiCore() {
       const res = await fetch('/api/ai-core-train', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contextData: context }),
+        body: JSON.stringify({ contextData: context , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
       const data = await res.json() as Partial<AICoreModel> & { error?: string }
       if (!res.ok || data.error) throw new Error(data.error ?? 'Erro desconhecido')
@@ -589,6 +589,7 @@ export default function AiCore() {
           channel: predChannel,
           objective: predObjective,
           modelContext,
+          language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR',
         }),
       })
       const data = await res.json() as Partial<AICorePrediction> & { error?: string }

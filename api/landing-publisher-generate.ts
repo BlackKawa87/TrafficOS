@@ -6,6 +6,15 @@ export const maxDuration = 60
 
 const client = new OpenAI()
 
+const LANG_MAP: Record<string, string> = {
+  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
+  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
+  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
+  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
+  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
+  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
+}
+
 const SYSTEM_PROMPT = `Você é um especialista em copywriting de resposta direta e criação de landing pages de alta conversão para tráfego pago. Escreva copy específica, baseada nos dados do produto, sem generalidades.
 
 RETORNE APENAS JSON válido com a estrutura abaixo:
@@ -108,7 +117,7 @@ export default async function handler(req: Request): Promise<Response> {
 
 ${context}
 
-Retorne APENAS o JSON válido sem markdown, sem texto extra, sem comentários.`,
+Retorne APENAS o JSON válido sem markdown, sem texto extra, sem comentários.${langLine}`,
         },
       ],
     })

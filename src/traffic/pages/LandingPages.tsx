@@ -108,7 +108,7 @@ ${JSON.stringify({
       const res = await fetch('/api/landingpage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ landingData }),
+        body: JSON.stringify({ landingData , language: localStorage.getItem('tos_ai_lang') ?? 'pt-BR' }),
       })
 
       clearInterval(interval)
