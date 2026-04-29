@@ -1,10 +1,10 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
 export const config = { runtime: 'edge' }
 
 export const maxDuration = 60
 
-const client = new Anthropic()
+const client = new OpenAI()
 
 const SYSTEM_PROMPT = `Você é um motor de inteligência artificial especializado em tráfego pago. Sua função é analisar o histórico completo de uma conta de anúncios e gerar um modelo de aprendizado que melhora decisões futuras.
 
@@ -75,11 +75,11 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
       max_tokens: 8000,
-      system: SYSTEM_PROMPT,
       messages: [
+        { role: 'system' as const, content: SYSTEM_PROMPT },
         {
           role: 'user',
           content: `Analise o histórico completo desta conta e gere o modelo de inteligência:\n\n${contextData}\n\nRetorne APENAS o JSON válido (objeto) sem markdown ou texto extra.`,
@@ -87,12 +87,8 @@ export default async function handler(req: Request): Promise<Response> {
       ],
     })
 
-    const content = message.content[0]
-    if (content.type !== 'text') {
-      return json({ error: 'Unexpected response type from AI' }, 500)
-    }
-
-    let jsonText = content.text.trim()
+    const text = response.choices[0].message.content ?? ''
+    let jsonText = text.trim()
     jsonText = jsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)

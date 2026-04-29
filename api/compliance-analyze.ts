@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
 export const config = { runtime: 'edge' }
 
@@ -29,7 +29,7 @@ export default async function handler(req: Request): Promise<Response> {
     product_name?: string
   }
 
-  const client = new Anthropic()
+  const client = new OpenAI()
 
   const systemPrompt = `Você é um especialista sênior em políticas de publicidade das principais plataformas digitais: Meta Ads (Facebook/Instagram), TikTok Ads, Google Ads, YouTube Ads e Native Ads (Taboola/Outbrain).
 
@@ -144,15 +144,17 @@ ${landing_url ? `LANDING PAGE: ${landing_url}` : ''}${claimsStr}
 Analise todos os elementos acima e retorne o JSON de compliance completo. Seja específico, direto e prático nas sugestões.`
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
       max_tokens: 3500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
     })
 
-    const raw = message.content[0].type === 'text' ? message.content[0].text : ''
-    const match = raw.match(/\{[\s\S]*\}/)
+    const text = response.choices[0].message.content ?? ''
+    const match = text.match(/\{[\s\S]*\}/)
     if (!match) {
       return new Response(
         JSON.stringify({ error: 'Resposta inválida do modelo.' }),

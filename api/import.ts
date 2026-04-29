@@ -1,8 +1,8 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
 export const config = { runtime: 'edge' };
 
-const client = new Anthropic();
+const client = new OpenAI();
 
 
 const json = (data: unknown, status = 200): Response =>
@@ -75,44 +75,31 @@ Regras:
 - detected_type: "requests" se só há pedidos, "players" se só há jogadores, "both" se há ambos`;
 
   try {
-    let messageContent: Anthropic.MessageParam['content'];
+    type OAIContent = string | { type: 'text'; text: string }[] | { type: 'image_url'; image_url: { url: string } }[]
+    let userContent: OAIContent
 
     if (type === 'image' && mimeType) {
-      messageContent = [
-        {
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-            data: content,
-          },
-        },
-        { type: 'text', text: 'Extraia as informações de transferência de futebol desta imagem.' },
-      ];
-    } else if (type === 'pdf') {
-      messageContent = [
-        {
-          type: 'document',
-          source: {
-            type: 'base64',
-            media_type: 'application/pdf',
-            data: content,
-          },
-        } as Anthropic.DocumentBlockParam,
-        { type: 'text', text: 'Extraia as informações de transferência de futebol deste documento.' },
-      ];
+      userContent = [
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${content}` } } as never,
+        { type: 'text', text: 'Extraia as informações desta imagem.' },
+      ]
     } else {
-      messageContent = content;
+      // text or pdf — for PDF, treat as base64-encoded text extracted client-side
+      userContent = type === 'pdf'
+        ? `[PDF content — base64 encoded]\n${content.slice(0, 8000)}`
+        : content
     }
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
       max_tokens: 4096,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: messageContent }],
+      messages: [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user', content: userContent as string },
+      ],
     });
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : '';
+    const text = response.choices[0].message.content ?? '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return json({ error: 'Could not parse AI response', raw: text }, 422);

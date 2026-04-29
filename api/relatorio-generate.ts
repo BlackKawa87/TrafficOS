@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
 export const config = { runtime: 'edge' }
 
@@ -43,7 +43,7 @@ export default async function handler(req: Request): Promise<Response> {
     channel?: string
   }
 
-  const client = new Anthropic()
+  const client = new OpenAI()
 
   const systemPrompt = `Você é um analista sênior de tráfego pago e growth marketing. Sua função é gerar relatórios executivos claros, honestos e acionáveis sobre a performance de campanhas de tráfego pago.
 
@@ -132,14 +132,16 @@ ${decisionsText}
 Analise esses dados e gere o relatório executivo completo no formato JSON especificado.`
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
       max_tokens: 2500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [
+        { role: 'system' as const, content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
     })
 
-    const raw   = message.content[0].type === 'text' ? message.content[0].text : ''
+    const raw = response.choices[0].message.content ?? ''
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) {
       return new Response(

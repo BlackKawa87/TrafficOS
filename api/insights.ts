@@ -1,10 +1,10 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
 export const config = { runtime: 'edge' }
 
 export const maxDuration = 60
 
-const client = new Anthropic()
+const client = new OpenAI()
 
 const SYSTEM_PROMPT = `Você é um analista sênior de tráfego pago com expertise em Meta Ads, TikTok Ads e Google Ads.
 
@@ -41,14 +41,16 @@ export default async function handler(req: Request): Promise<Response> {
   if (!insightsData) return json({ error: 'Missing insightsData' }, 400)
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
       max_tokens: 4000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: insightsData }],
+      messages: [
+        { role: 'system' as const, content: SYSTEM_PROMPT },
+        { role: 'user', content: insightsData },
+      ],
     })
 
-    const raw = (message.content[0] as { type: string; text: string }).text
+    const raw = response.choices[0].message.content ?? ''
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim()
     const match = cleaned.match(/\{[\s\S]*\}/)
     if (!match) return json({ error: 'Invalid AI response' }, 500)

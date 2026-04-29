@@ -1,10 +1,10 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
 export const config = { runtime: 'edge' }
 
 export const maxDuration = 60
 
-const client = new Anthropic()
+const client = new OpenAI()
 
 const SYSTEM_PROMPT = `Você é um especialista sênior em produção de vídeos de anúncios para tráfego pago, com profundo conhecimento em copywriting de resposta direta, roteiro criativo e produção de conteúdo para Meta Ads, TikTok Ads e Reels.
 
@@ -85,11 +85,11 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
       max_tokens: 4000,
-      system: SYSTEM_PROMPT,
       messages: [
+        { role: 'system' as const, content: SYSTEM_PROMPT },
         {
           role: 'user',
           content: `Gere os dois roteiros completos de vídeo com base nos dados abaixo:
@@ -101,12 +101,8 @@ Retorne APENAS o JSON válido sem markdown, sem texto extra, sem comentários.`,
       ],
     })
 
-    const content = message.content[0]
-    if (content.type !== 'text') {
-      return json({ error: 'Unexpected response type' }, 500)
-    }
-
-    let jsonText = content.text.trim()
+    const text = response.choices[0].message.content ?? ''
+    let jsonText = text.trim()
     jsonText = jsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)

@@ -1,10 +1,10 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
 export const config = { runtime: 'edge' }
 
 export const maxDuration = 60
 
-const client = new Anthropic()
+const client = new OpenAI()
 
 const SYSTEM_PROMPT = `Você é o motor de decisão estratégica do Full Auto Mode — um gestor de tráfego pago autônomo. Analise o estado atual do sistema e determine a melhor ação estratégica.
 
@@ -51,11 +51,11 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
       max_tokens: 1500,
-      system: SYSTEM_PROMPT,
       messages: [
+        { role: 'system' as const, content: SYSTEM_PROMPT },
         {
           role: 'user',
           content: `Analise o estado atual do Full Auto Mode e determine a próxima ação estratégica:
@@ -67,12 +67,8 @@ Retorne APENAS o JSON válido sem markdown ou texto extra.`,
       ],
     })
 
-    const content = message.content[0]
-    if (content.type !== 'text') {
-      return json({ error: 'Unexpected response type' }, 500)
-    }
-
-    let jsonText = content.text.trim()
+    const text = response.choices[0].message.content ?? ''
+    let jsonText = text.trim()
     jsonText = jsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
