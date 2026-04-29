@@ -48,6 +48,7 @@ import PromptCenter from './traffic/pages/PromptCenter'
 import Configuracoes from './traffic/pages/Configuracoes'
 import NovaMetrica from './traffic/pages/NovaMetrica'
 import ImportarMetricas from './traffic/pages/ImportarMetricas'
+import Guia from './traffic/pages/Guia'
 
 function App() {
   return (
@@ -103,6 +104,7 @@ function App() {
           <Route path="landing-page/:id" element={<LandingPageDetalhe />} />
           <Route path="prompt-center" element={<PromptCenter />} />
           <Route path="configuracoes" element={<Configuracoes />} />
+          <Route path="guia" element={<Guia />} />
         </Route>
       </Routes>
     </Router>

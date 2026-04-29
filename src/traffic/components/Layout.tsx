@@ -1,82 +1,236 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { LanguageProvider, useLanguage } from '../i18n'
 
-const NAV_ITEMS = [
-  { path: '/', label: 'nav.dashboard' as const, icon: '⊞', end: true },
-  { path: '/command-center', label: 'nav.commandCenter' as const, icon: '🧠' },
-  { path: '/produtos', label: 'nav.products' as const, icon: '📦' },
-  { path: '/campanhas', label: 'nav.campaigns' as const, icon: '📢' },
-  { path: '/criativos', label: 'nav.creatives' as const, icon: '🎨' },
-  { path: '/metricas', label: 'nav.metrics' as const, icon: '📈' },
-  { path: '/decisoes', label: 'nav.decisions' as const, icon: '🤖' },
-  { path: '/escala', label: 'nav.scale' as const, icon: '🚀' },
-  { path: '/remarketing', label: 'nav.remarketing' as const, icon: '🔁' },
-  { path: '/expansao', label: 'nav.expansao' as const, icon: '🌐' },
-  { path: '/email', label: 'nav.email' as const, icon: '📧' },
-  { path: '/whatsapp', label: 'nav.whatsapp' as const, icon: '💬' },
-  { path: '/vsl', label: 'nav.vsl' as const, icon: '🎬' },
-  { path: '/integracoes', label: 'nav.integracoes' as const, icon: '🔌' },
-  { path: '/inteligencia', label: 'nav.inteligencia' as const, icon: '🧠' },
-  { path: '/autopilot', label: 'nav.autopilot' as const, icon: '🎯' },
-  { path: '/auto-testing', label: 'nav.autoTesting' as const, icon: '🧪' },
-  { path: '/ai-core', label: 'nav.aiCore' as const, icon: '💡' },
-  { path: '/multi-produto', label: 'nav.multiProduto' as const, icon: '🏆' },
-  { path: '/full-auto', label: 'nav.fullAuto' as const, icon: '🤖' },
-  { path: '/video-ai', label: 'nav.videoAi' as const, icon: '🎥' },
-  { path: '/landing-publisher', label: 'nav.landingPublisher' as const, icon: '🖥️' },
-  { path: '/cloud-ops', label: 'nav.cloudOps' as const, icon: '☁️' },
-  { path: '/compliance', label: 'nav.compliance' as const, icon: '🛡️' },
-  { path: '/relatorios', label: 'nav.relatorios' as const, icon: '📊' },
-  { path: '/plano-diario', label: 'nav.plan' as const, icon: '📅' },
-  { path: '/landing-page', label: 'nav.landing' as const, icon: '🖥️' },
-  { path: '/prompt-center', label: 'nav.prompts' as const, icon: '💬' },
-  { path: '/configuracoes', label: 'nav.settings' as const, icon: '⚙️' },
+// ─── Nav group definitions ───────────────────────────────────────────────────
+type NavItem = { path: string; label: string; icon: string; end?: boolean }
+type NavGroup = { id: string; label: string; labelEn: string; icon: string; items: NavItem[] }
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    id: 'overview',
+    label: 'Visão Geral',
+    labelEn: 'Overview',
+    icon: '⊞',
+    items: [
+      { path: '/', label: 'Dashboard', icon: '⊞', end: true },
+      { path: '/command-center', label: 'Command Center', icon: '🧠' },
+      { path: '/plano-diario', label: 'Plano Diário', icon: '📅' },
+      { path: '/relatorios', label: 'Relatórios', icon: '📊' },
+    ],
+  },
+  {
+    id: 'traffic',
+    label: 'Tráfego',
+    labelEn: 'Traffic',
+    icon: '📢',
+    items: [
+      { path: '/produtos', label: 'Produtos', icon: '📦' },
+      { path: '/campanhas', label: 'Campanhas', icon: '📢' },
+      { path: '/criativos', label: 'Criativos', icon: '🎨' },
+      { path: '/metricas', label: 'Métricas', icon: '📈' },
+    ],
+  },
+  {
+    id: 'ia',
+    label: 'IA & Otimização',
+    labelEn: 'AI & Optimization',
+    icon: '🤖',
+    items: [
+      { path: '/decisoes', label: 'Decisões IA', icon: '🤖' },
+      { path: '/escala', label: 'Motor de Escala', icon: '🚀' },
+      { path: '/remarketing', label: 'Remarketing', icon: '🔁' },
+      { path: '/expansao', label: 'Multi-Canal', icon: '🌐' },
+      { path: '/inteligencia', label: 'Inteligência', icon: '🔮' },
+      { path: '/multi-produto', label: 'Multi-Produto', icon: '🏆' },
+    ],
+  },
+  {
+    id: 'content',
+    label: 'Conteúdo & Copy',
+    labelEn: 'Content & Copy',
+    icon: '✍️',
+    items: [
+      { path: '/email', label: 'Email Marketing', icon: '📧' },
+      { path: '/whatsapp', label: 'WhatsApp', icon: '💬' },
+      { path: '/vsl', label: 'Gerador de VSL', icon: '🎬' },
+      { path: '/video-ai', label: 'Video AI', icon: '🎥' },
+      { path: '/landing-page', label: 'Landing Pages', icon: '🖥️' },
+      { path: '/landing-publisher', label: 'LP Publisher', icon: '⚡' },
+    ],
+  },
+  {
+    id: 'auto',
+    label: 'Automação',
+    labelEn: 'Automation',
+    icon: '⚙️',
+    items: [
+      { path: '/autopilot', label: 'Auto-Pilot', icon: '🎯' },
+      { path: '/auto-testing', label: 'Auto-Testing', icon: '🧪' },
+      { path: '/ai-core', label: 'AI Core', icon: '💡' },
+      { path: '/full-auto', label: 'Full Auto', icon: '🔄' },
+    ],
+  },
+  {
+    id: 'system',
+    label: 'Sistema',
+    labelEn: 'System',
+    icon: '⚙️',
+    items: [
+      { path: '/compliance', label: 'Compliance', icon: '🛡️' },
+      { path: '/integracoes', label: 'Integrações', icon: '🔌' },
+      { path: '/cloud-ops', label: 'Cloud Ops', icon: '☁️' },
+      { path: '/prompt-center', label: 'Prompt Center', icon: '📝' },
+      { path: '/configuracoes', label: 'Configurações', icon: '⚙️' },
+    ],
+  },
 ]
 
+const STORAGE_KEY = 'tos_nav_open'
+
+function getInitialOpen(): Record<string, boolean> {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch { /* ignore */ }
+  // Default: first two groups open
+  const init: Record<string, boolean> = {}
+  NAV_GROUPS.forEach((g, i) => { init[g.id] = i < 2 })
+  return init
+}
+
+// ─── Inner component ─────────────────────────────────────────────────────────
 function LayoutInner() {
-  const { t, lang, setLang } = useLanguage()
+  const { lang, setLang } = useLanguage()
+  const location = useLocation()
+  const [open, setOpen] = useState<Record<string, boolean>>(getInitialOpen)
+
+  // Auto-expand the group that contains the active route
+  useEffect(() => {
+    const active = location.pathname
+    const groupId = NAV_GROUPS.find(g =>
+      g.items.some(item =>
+        item.end
+          ? active === item.path
+          : active === item.path || active.startsWith(item.path + '/')
+      )
+    )?.id
+    if (groupId) {
+      setOpen(prev => {
+        if (prev[groupId]) return prev
+        const next = { ...prev, [groupId]: true }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+        return next
+      })
+    }
+  }, [location.pathname])
+
+  function toggle(id: string) {
+    setOpen(prev => {
+      const next = { ...prev, [id]: !prev[id] }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  function isGroupActive(group: NavGroup) {
+    const active = location.pathname
+    return group.items.some(item =>
+      item.end
+        ? active === item.path
+        : active === item.path || active.startsWith(item.path + '/')
+    )
+  }
 
   return (
     <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-60 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0">
+      <aside className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0">
         {/* Logo */}
-        <div className="px-5 py-5 border-b border-gray-800">
+        <div className="px-4 py-4 border-b border-gray-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center text-sm font-bold">
+            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0">
               ⚡
             </div>
             <div>
-              <div className="text-base font-bold text-white leading-none">TrafficOS</div>
+              <div className="text-sm font-bold text-white leading-none">TrafficOS</div>
               <div className="text-[10px] text-gray-500 mt-0.5">Paid Traffic Intelligence</div>
             </div>
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 py-3 overflow-y-auto">
-          {NAV_ITEMS.map(item => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 mx-2 rounded-lg text-sm transition-all ${
-                  isActive
-                    ? 'bg-violet-600/20 text-violet-400 font-medium'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                }`
-              }
-            >
-              <span className="text-base w-5 text-center">{item.icon}</span>
-              <span>{t(item.label)}</span>
-            </NavLink>
-          ))}
+        {/* Guia link — always visible at top */}
+        <div className="px-3 pt-2.5 pb-1">
+          <NavLink
+            to="/guia"
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-violet-600/20 text-violet-400'
+                  : 'bg-violet-600/10 text-violet-400 hover:bg-violet-600/20'
+              }`
+            }
+          >
+            <span>📖</span>
+            <span>{lang === 'en' ? 'How to Use' : 'Guia de Uso'}</span>
+          </NavLink>
+        </div>
+
+        {/* Navigation groups */}
+        <nav className="flex-1 py-1 overflow-y-auto">
+          {NAV_GROUPS.map(group => {
+            const isOpen = open[group.id] ?? false
+            const groupActive = isGroupActive(group)
+
+            return (
+              <div key={group.id} className="mb-0.5">
+                {/* Group header */}
+                <button
+                  onClick={() => toggle(group.id)}
+                  className={`w-full flex items-center justify-between px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                    groupActive
+                      ? 'text-violet-400'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  <span>{lang === 'en' ? group.labelEn : group.label}</span>
+                  <span
+                    className={`text-[10px] transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                  >
+                    ▶
+                  </span>
+                </button>
+
+                {/* Group items */}
+                {isOpen && (
+                  <div className="pb-1">
+                    {group.items.map(item => (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        end={item.end}
+                        className={({ isActive }) =>
+                          `flex items-center gap-2.5 px-3 py-2 mx-2 rounded-lg text-sm transition-all ${
+                            isActive
+                              ? 'bg-violet-600/20 text-violet-400 font-medium'
+                              : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                          }`
+                        }
+                      >
+                        <span className="text-sm w-4 text-center flex-shrink-0">{item.icon}</span>
+                        <span className="text-xs">{item.label}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         {/* Language toggle */}
-        <div className="px-4 py-4 border-t border-gray-800">
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Language / Idioma</div>
+        <div className="px-4 py-3 border-t border-gray-800">
+          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">Language / Idioma</div>
           <div className="flex gap-1.5">
             <button
               onClick={() => setLang('pt')}
