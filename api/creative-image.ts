@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 
-export const config = { runtime: 'edge' }
+// Serverless Function (NOT Edge) — needs up to 60s for DALL-E 3 image generation
 export const maxDuration = 60
 
 const client = new OpenAI()
@@ -78,7 +78,8 @@ export default async function handler(req: Request): Promise<Response> {
     const isCarousel = creative_type === 'carrossel'
     const count = isCarousel ? Math.min(slide_count ?? 3, 5) : 1
 
-    const generationJobs: Promise<{ url: string; label: string; revised_prompt?: string }>[] = []
+    type JobResult = { url: string; label: string; revised_prompt?: string; error?: string }
+    const generationJobs: Promise<JobResult>[] = []
 
     for (let i = 0; i < count; i++) {
       const prompt = buildPrompt(creative_type, product_name, niche ?? '', strategy, isCarousel ? i : undefined)
@@ -102,11 +103,21 @@ export default async function handler(req: Request): Promise<Response> {
           url:            res.data[0].url ?? '',
           label,
           revised_prompt: res.data[0].revised_prompt,
+        })).catch((err: unknown) => ({
+          url:   '',
+          label,
+          error: err instanceof Error ? err.message : 'Falha na geração',
         }))
       )
     }
 
-    const assets = await Promise.all(generationJobs)
+    const results = await Promise.all(generationJobs)
+    // Filter out failed slides but keep successful ones
+    const assets = results.filter(r => r.url !== '')
+    if (assets.length === 0) {
+      const firstErr = results[0]?.error ?? 'Erro desconhecido'
+      return json({ error: firstErr }, 500)
+    }
     return json({ assets })
 
   } catch (err) {
