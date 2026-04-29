@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um especialista em criação de criativos de alta conversão para tráfego pago (Meta Ads, TikTok Ads).
 
@@ -55,15 +56,19 @@ REGRAS OBRIGATÓRIAS:
 - Baseie todas as variações nos dados reais do produto fornecidos
 - Pense em: o que um gestor de tráfego sênior testaria primeiro para encontrar o vencedor mais rápido?`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { creativeData, productData } = req.body as { creativeData: string; productData: string }
+  const { creativeData, productData } = (await req.json()) as { creativeData: string; productData: string }
 
   if (!creativeData || !productData) {
-    return res.status(400).json({ error: 'Creative and product data required' })
+    return json({ error: 'Creative and product data required' }, 400)
   }
 
   try {
@@ -89,7 +94,7 @@ Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra.`,
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      return res.status(500).json({ error: 'Unexpected response type from AI' })
+      return json({ error: 'Unexpected response type from AI' }, 500)
     }
 
     let jsonText = content.text.trim()
@@ -97,12 +102,12 @@ Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra.`,
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) })
+      return json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422)
     }
 
-    return res.status(200).json(JSON.parse(jsonMatch[0]))
+    return json(JSON.parse(jsonMatch[0]))
   } catch (err) {
     console.error('Auto-testing API error:', err)
-    return res.status(500).json({ error: 'Failed to generate variations. Please try again.' })
+    return json({ error: 'Failed to generate variations. Please try again.' }, 500)
   }
 }

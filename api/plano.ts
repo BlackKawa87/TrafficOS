@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um gestor de tráfego e estrategista de crescimento orientado a execução.
 
@@ -63,11 +64,15 @@ SCHEMA JSON OBRIGATÓRIO:
   "next_strategic_step": "<o que fazer depois de executar este plano — próximo ciclo estratégico>"
 }`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { planData } = req.body as { planData: string }
-  if (!planData) return res.status(400).json({ error: 'Missing planData' })
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+
+  const { planData } = (await req.json()) as { planData: string }
+  if (!planData) return json({ error: 'Missing planData' }, 400)
 
   try {
     const message = await client.messages.create({
@@ -80,12 +85,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const raw = (message.content[0] as { type: string; text: string }).text
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim()
     const match = cleaned.match(/\{[\s\S]*\}/)
-    if (!match) return res.status(500).json({ error: 'Invalid AI response' })
+    if (!match) return json({ error: 'Invalid AI response' }, 500)
 
     const parsed = JSON.parse(match[0])
-    return res.status(200).json(parsed)
+    return json(parsed)
   } catch (err) {
     console.error(err)
-    return res.status(500).json({ error: 'AI generation failed' })
+    return json({ error: 'AI generation failed' }, 500)
   }
 }

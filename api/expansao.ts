@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um especialista sênior em expansão multi-canal e growth marketing para tráfego pago.
 
@@ -71,15 +72,19 @@ ALERTAS:
 - Se houver vídeos vencedores: TikTok e YouTube são prioridade
 - Mencione sempre os números dos dados fornecidos (ROAS, CTR, CPA) ao justificar`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { contextData } = req.body as { contextData: string }
+  const { contextData } = (await req.json()) as { contextData: string }
 
   if (!contextData) {
-    return res.status(400).json({ error: 'Context data is required' })
+    return json({ error: 'Context data is required' }, 400)
   }
 
   try {
@@ -105,7 +110,7 @@ IMPORTANTE:
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      return res.status(500).json({ error: 'Unexpected response type from AI' })
+      return json({ error: 'Unexpected response type from AI' }, 500)
     }
 
     let jsonText = content.text.trim()
@@ -113,13 +118,13 @@ IMPORTANTE:
 
     const jsonMatch = jsonText.match(/\[[\s\S]*\]/)
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) })
+      return json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422)
     }
 
     const plans = JSON.parse(jsonMatch[0])
-    return res.status(200).json({ plans })
+    return json({ plans })
   } catch (err) {
     console.error('Expansao API error:', err)
-    return res.status(500).json({ error: 'Failed to generate expansion plans. Please try again.' })
+    return json({ error: 'Failed to generate expansion plans. Please try again.' }, 500)
   }
 }

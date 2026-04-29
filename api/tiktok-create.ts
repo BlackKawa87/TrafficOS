@@ -1,4 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+export const runtime = 'edge'
+
 
 export const maxDuration = 30
 
@@ -40,8 +41,12 @@ interface TikTokApiResponse {
   data?: { campaign_id?: string; adgroup_id?: string }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const { action } = req.query as { action?: string }
 
@@ -53,10 +58,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function createCampaign(req: VercelRequest, res: VercelResponse) {
   const { access_token, advertiser_id, name, objective, budget, budget_mode = 'BUDGET_MODE_DAY' } =
-    req.body as CreateCampaignBody
+    (await req.json()) as CreateCampaignBody
 
   if (!access_token || !advertiser_id || !name || !objective) {
-    return res.status(400).json({ error: 'access_token, advertiser_id, name e objective são obrigatórios' })
+    return json({ error: 'access_token, advertiser_id, name e objective são obrigatórios' }, 400)
   }
 
   const ttObjective = OBJECTIVE_MAP[objective] ?? 'TRAFFIC'
@@ -77,23 +82,23 @@ async function createCampaign(req: VercelRequest, res: VercelResponse) {
     const data = await ttRes.json() as TikTokApiResponse
 
     if (data.code !== 0) {
-      return res.status(400).json({ error: `TikTok API: ${data.message}` })
+      return json({ error: `TikTok API: ${data.message}` })
     }
 
-    return res.status(200).json({ campaign_id: data.data?.campaign_id, platform: 'tiktok' })
+    return json({ campaign_id: data.data?.campaign_id, platform: 'tiktok' })
   } catch (err) {
     console.error('TikTok create campaign error:', err)
-    return res.status(500).json({ error: 'Falha ao criar campanha no TikTok Ads.' })
+    return json({ error: 'Falha ao criar campanha no TikTok Ads.' }, 500)
   }
 }
 
 async function createAdGroup(req: VercelRequest, res: VercelResponse) {
   const { access_token, advertiser_id, campaign_id, name, budget,
     budget_mode = 'BUDGET_MODE_DAY', placement_type = 'PLACEMENT_TYPE_AUTOMATIC' } =
-    req.body as CreateAdGroupBody
+    (await req.json()) as CreateAdGroupBody
 
   if (!access_token || !advertiser_id || !campaign_id || !name) {
-    return res.status(400).json({ error: 'access_token, advertiser_id, campaign_id e name são obrigatórios' })
+    return json({ error: 'access_token, advertiser_id, campaign_id e name são obrigatórios' }, 400)
   }
 
   try {
@@ -115,12 +120,12 @@ async function createAdGroup(req: VercelRequest, res: VercelResponse) {
     const data = await ttRes.json() as TikTokApiResponse
 
     if (data.code !== 0) {
-      return res.status(400).json({ error: `TikTok API: ${data.message}` })
+      return json({ error: `TikTok API: ${data.message}` })
     }
 
-    return res.status(200).json({ adgroup_id: data.data?.adgroup_id, platform: 'tiktok' })
+    return json({ adgroup_id: data.data?.adgroup_id, platform: 'tiktok' })
   } catch (err) {
     console.error('TikTok create adgroup error:', err)
-    return res.status(500).json({ error: 'Falha ao criar grupo de anúncios no TikTok Ads.' })
+    return json({ error: 'Falha ao criar grupo de anúncios no TikTok Ads.' }, 500)
   }
 }

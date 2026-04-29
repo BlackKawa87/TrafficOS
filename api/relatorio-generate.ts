@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 
+export const runtime = 'edge'
+
 export const maxDuration = 60
 
 export default async function handler(req: Request): Promise<Response> {

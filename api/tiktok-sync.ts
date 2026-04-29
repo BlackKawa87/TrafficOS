@@ -1,4 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+export const runtime = 'edge'
+
 
 export const maxDuration = 60
 
@@ -32,12 +33,16 @@ interface ReportRow {
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { access_token, advertiser_id } = req.body as { access_token?: string; advertiser_id?: string }
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+
+  const { access_token, advertiser_id } = (await req.json()) as { access_token?: string; advertiser_id?: string }
   if (!access_token || !advertiser_id) {
-    return res.status(400).json({ error: 'access_token e advertiser_id são obrigatórios' })
+    return json({ error: 'access_token e advertiser_id são obrigatórios' }, 400)
   }
 
   const headers = { 'Access-Token': access_token, 'Content-Type': 'application/json' }
@@ -49,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     )
     const campaignsData = await campaignsRes.json() as TikTokApiResponse<TikTokCampaign>
     if (campaignsData.code !== 0) {
-      return res.status(400).json({ error: `TikTok API: ${campaignsData.message}` })
+      return json({ error: `TikTok API: ${campaignsData.message}` })
     }
     const campaigns = campaignsData.data?.list ?? []
 
@@ -106,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const totalClicks = syncedCampaigns.reduce((s, c) => s + (c.clicks ?? 0), 0)
     const enableStatuses = ['CAMPAIGN_STATUS_ENABLE', 'enable']
 
-    return res.status(200).json({
+    return json({
       sync: {
         platform: 'tiktok',
         synced_at: new Date().toISOString(),
@@ -122,6 +127,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   } catch (err) {
     console.error('TikTok sync error:', err)
-    return res.status(500).json({ error: 'Falha ao sincronizar TikTok Ads. Verifique suas credenciais.' })
+    return json({ error: 'Falha ao sincronizar TikTok Ads. Verifique suas credenciais.' }, 500)
   }
 }

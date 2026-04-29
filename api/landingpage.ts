@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um especialista em design de landing pages de alta conversão, copywriting de resposta direta e UX para tráfego pago.
 
@@ -80,11 +81,15 @@ SCHEMA JSON OBRIGATÓRIO:
   "notas_conversao": "<recomendações estratégicas de conversão: ex: adicionar timer de urgência no hero, CTA sticky no mobile, popup de saída>"
 }`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { landingData } = req.body as { landingData: string }
-  if (!landingData) return res.status(400).json({ error: 'Missing landingData' })
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+
+  const { landingData } = (await req.json()) as { landingData: string }
+  if (!landingData) return json({ error: 'Missing landingData' }, 400)
 
   try {
     const message = await client.messages.create({
@@ -105,18 +110,18 @@ Retorne APENAS o JSON válido conforme o schema.`,
     })
 
     const content = message.content[0]
-    if (content.type !== 'text') return res.status(500).json({ error: 'Unexpected response type' })
+    if (content.type !== 'text') return json({ error: 'Unexpected response type' }, 500)
 
     let jsonText = content.text.trim()
     jsonText = jsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return res.status(422).json({ error: 'Could not parse AI response as JSON' })
+    if (!jsonMatch) return json({ error: 'Could not parse AI response as JSON' }, 422)
 
     const structure = JSON.parse(jsonMatch[0])
-    return res.status(200).json({ structure })
+    return json({ structure })
   } catch (err) {
     console.error('Landing page API error:', err)
-    return res.status(500).json({ error: 'Failed to generate landing page. Please try again.' })
+    return json({ error: 'Failed to generate landing page. Please try again.' }, 500)
   }
 }

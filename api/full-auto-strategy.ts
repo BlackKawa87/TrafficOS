@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é o motor de decisão estratégica do Full Auto Mode — um gestor de tráfego pago autônomo. Analise o estado atual do sistema e determine a melhor ação estratégica.
 
@@ -34,15 +35,19 @@ REGRAS DE DECISÃO:
 - risk_alert deve ser null OU uma string de alerta se há risco real
 - Seja específico com nomes de campanhas e produtos reais dos dados`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { sessionSummary } = req.body as { sessionSummary: string }
+  const { sessionSummary } = (await req.json()) as { sessionSummary: string }
 
   if (!sessionSummary) {
-    return res.status(400).json({ error: 'Session summary required' })
+    return json({ error: 'Session summary required' }, 400)
   }
 
   try {
@@ -64,7 +69,7 @@ Retorne APENAS o JSON válido sem markdown ou texto extra.`,
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      return res.status(500).json({ error: 'Unexpected response type' })
+      return json({ error: 'Unexpected response type' }, 500)
     }
 
     let jsonText = content.text.trim()
@@ -72,12 +77,12 @@ Retorne APENAS o JSON válido sem markdown ou texto extra.`,
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response', raw: jsonText.slice(0, 500) })
+      return json({ error: 'Could not parse AI response', raw: jsonText.slice(0, 500) }, 422)
     }
 
-    return res.status(200).json(JSON.parse(jsonMatch[0]))
+    return json(JSON.parse(jsonMatch[0]))
   } catch (err) {
     console.error('Full auto strategy error:', err)
-    return res.status(500).json({ error: 'Failed to generate strategy. Please try again.' })
+    return json({ error: 'Failed to generate strategy. Please try again.' }, 500)
   }
 }

@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um especialista sênior em produção de vídeos de anúncios para tráfego pago, com profundo conhecimento em copywriting de resposta direta, roteiro criativo e produção de conteúdo para Meta Ads, TikTok Ads e Reels.
 
@@ -68,15 +69,19 @@ REGRAS OBRIGATÓRIAS:
 - Cada cena deve ter visual, fala e texto claramente separados
 - O produto, dores e benefícios reais devem aparecer no roteiro — sem generalidades`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { context } = req.body as { context: string }
+  const { context } = (await req.json()) as { context: string }
 
   if (!context) {
-    return res.status(400).json({ error: 'Context required' })
+    return json({ error: 'Context required' }, 400)
   }
 
   try {
@@ -98,7 +103,7 @@ Retorne APENAS o JSON válido sem markdown, sem texto extra, sem comentários.`,
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      return res.status(500).json({ error: 'Unexpected response type' })
+      return json({ error: 'Unexpected response type' }, 500)
     }
 
     let jsonText = content.text.trim()
@@ -106,12 +111,12 @@ Retorne APENAS o JSON válido sem markdown, sem texto extra, sem comentários.`,
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response', raw: jsonText.slice(0, 500) })
+      return json({ error: 'Could not parse AI response', raw: jsonText.slice(0, 500) }, 422)
     }
 
-    return res.status(200).json(JSON.parse(jsonMatch[0]))
+    return json(JSON.parse(jsonMatch[0]))
   } catch (err) {
     console.error('Video AI generate error:', err)
-    return res.status(500).json({ error: 'Failed to generate video script. Please try again.' })
+    return json({ error: 'Failed to generate video script. Please try again.' }, 500)
   }
 }

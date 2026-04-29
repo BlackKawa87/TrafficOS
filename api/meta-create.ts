@@ -1,4 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+export const runtime = 'edge'
+
 
 export const maxDuration = 30
 
@@ -35,8 +36,12 @@ interface CreateAdSetBody {
   billing_event?: string
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const { action } = req.query as { action?: string }
 
@@ -48,10 +53,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 async function createCampaign(req: VercelRequest, res: VercelResponse) {
   const { access_token, ad_account_id, name, objective, daily_budget_cents, status = 'PAUSED' } =
-    req.body as CreateCampaignBody
+    (await req.json()) as CreateCampaignBody
 
   if (!access_token || !ad_account_id || !name || !objective) {
-    return res.status(400).json({ error: 'access_token, ad_account_id, name e objective são obrigatórios' })
+    return json({ error: 'access_token, ad_account_id, name e objective são obrigatórios' }, 400)
   }
 
   const accountId = ad_account_id.startsWith('act_') ? ad_account_id : `act_${ad_account_id}`
@@ -76,23 +81,23 @@ async function createCampaign(req: VercelRequest, res: VercelResponse) {
     const data = await metaRes.json() as { id?: string; error?: { message: string } }
 
     if (data.error) {
-      return res.status(400).json({ error: `Meta API: ${data.error.message}` })
+      return json({ error: `Meta API: ${data.error.message}` })
     }
 
-    return res.status(200).json({ campaign_id: data.id, platform: 'meta' })
+    return json({ campaign_id: data.id, platform: 'meta' })
   } catch (err) {
     console.error('Meta create campaign error:', err)
-    return res.status(500).json({ error: 'Falha ao criar campanha no Meta Ads.' })
+    return json({ error: 'Falha ao criar campanha no Meta Ads.' }, 500)
   }
 }
 
 async function createAdSet(req: VercelRequest, res: VercelResponse) {
   const { access_token, ad_account_id, campaign_id, name, daily_budget_cents,
     optimization_goal = 'LINK_CLICKS', billing_event = 'IMPRESSIONS' } =
-    req.body as CreateAdSetBody
+    (await req.json()) as CreateAdSetBody
 
   if (!access_token || !ad_account_id || !campaign_id || !name) {
-    return res.status(400).json({ error: 'access_token, ad_account_id, campaign_id e name são obrigatórios' })
+    return json({ error: 'access_token, ad_account_id, campaign_id e name são obrigatórios' }, 400)
   }
 
   const accountId = ad_account_id.startsWith('act_') ? ad_account_id : `act_${ad_account_id}`
@@ -115,12 +120,12 @@ async function createAdSet(req: VercelRequest, res: VercelResponse) {
     const data = await metaRes.json() as { id?: string; error?: { message: string } }
 
     if (data.error) {
-      return res.status(400).json({ error: `Meta API: ${data.error.message}` })
+      return json({ error: `Meta API: ${data.error.message}` })
     }
 
-    return res.status(200).json({ adset_id: data.id, platform: 'meta' })
+    return json({ adset_id: data.id, platform: 'meta' })
   } catch (err) {
     console.error('Meta create adset error:', err)
-    return res.status(500).json({ error: 'Falha ao criar conjunto no Meta Ads.' })
+    return json({ error: 'Falha ao criar conjunto no Meta Ads.' }, 500)
   }
 }

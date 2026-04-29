@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um estrategista sênior de tráfego pago, growth hacking e otimização de conversão com experiência em análise de padrões de performance.
 
@@ -90,15 +91,19 @@ ALERTAS OBRIGATÓRIOS:
 - Use os dados reais para embasar cada insight
 - Mínimo: 5 padrões vencedores, 3 erros, 3 oportunidades, 5 sugestões, 5 próximos passos`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { contextData } = req.body as { contextData: string }
+  const { contextData } = (await req.json()) as { contextData: string }
 
   if (!contextData) {
-    return res.status(400).json({ error: 'Context data is required' })
+    return json({ error: 'Context data is required' }, 400)
   }
 
   try {
@@ -124,7 +129,7 @@ IMPORTANTE:
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      return res.status(500).json({ error: 'Unexpected response type from AI' })
+      return json({ error: 'Unexpected response type from AI' }, 500)
     }
 
     let jsonText = content.text.trim()
@@ -132,13 +137,13 @@ IMPORTANTE:
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) })
+      return json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422)
     }
 
     const report = JSON.parse(jsonMatch[0])
-    return res.status(200).json({ report })
+    return json({ report })
   } catch (err) {
     console.error('Inteligencia API error:', err)
-    return res.status(500).json({ error: 'Failed to generate intelligence report. Please try again.' })
+    return json({ error: 'Failed to generate intelligence report. Please try again.' }, 500)
   }
 }

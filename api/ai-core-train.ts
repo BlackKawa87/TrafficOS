@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um motor de inteligência artificial especializado em tráfego pago. Sua função é analisar o histórico completo de uma conta de anúncios e gerar um modelo de aprendizado que melhora decisões futuras.
 
@@ -58,15 +59,19 @@ REGRAS:
 - Seja crítico e direto — sem elogios genéricos
 - Baseie cada insight nos dados reais fornecidos`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { contextData } = req.body as { contextData: string }
+  const { contextData } = (await req.json()) as { contextData: string }
 
   if (!contextData) {
-    return res.status(400).json({ error: 'Context data is required' })
+    return json({ error: 'Context data is required' }, 400)
   }
 
   try {
@@ -84,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      return res.status(500).json({ error: 'Unexpected response type from AI' })
+      return json({ error: 'Unexpected response type from AI' }, 500)
     }
 
     let jsonText = content.text.trim()
@@ -92,12 +97,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response', raw: jsonText.slice(0, 500) })
+      return json({ error: 'Could not parse AI response', raw: jsonText.slice(0, 500) }, 422)
     }
 
-    return res.status(200).json(JSON.parse(jsonMatch[0]))
+    return json(JSON.parse(jsonMatch[0]))
   } catch (err) {
     console.error('AI Core train error:', err)
-    return res.status(500).json({ error: 'Failed to train model. Please try again.' })
+    return json({ error: 'Failed to train model. Please try again.' }, 500)
   }
 }

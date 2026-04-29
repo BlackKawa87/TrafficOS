@@ -1,4 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+export const runtime = 'edge'
+
 
 export const maxDuration = 60
 
@@ -30,12 +31,16 @@ interface MetaApiResponse<T> {
   error?: { message: string; code: number }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { access_token, ad_account_id } = req.body as { access_token?: string; ad_account_id?: string }
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+
+  const { access_token, ad_account_id } = (await req.json()) as { access_token?: string; ad_account_id?: string }
   if (!access_token || !ad_account_id) {
-    return res.status(400).json({ error: 'access_token e ad_account_id são obrigatórios' })
+    return json({ error: 'access_token e ad_account_id são obrigatórios' }, 400)
   }
 
   const accountId = ad_account_id.startsWith('act_') ? ad_account_id : `act_${ad_account_id}`
@@ -47,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     )
     const campaignsData = await campaignsRes.json() as MetaApiResponse<MetaCampaign>
     if (campaignsData.error) {
-      return res.status(400).json({ error: `Meta API: ${campaignsData.error.message}` })
+      return json({ error: `Meta API: ${campaignsData.error.message}` })
     }
     const campaigns = campaignsData.data ?? []
 
@@ -60,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     )
     const insightsData = await insightsRes.json() as MetaApiResponse<MetaInsight>
     if (insightsData.error) {
-      return res.status(400).json({ error: `Meta Insights: ${insightsData.error.message}` })
+      return json({ error: `Meta Insights: ${insightsData.error.message}` })
     }
 
     const byId = new Map((insightsData.data ?? []).map(i => [i.campaign_id, i]))
@@ -95,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const totalImpressions = syncedCampaigns.reduce((s, c) => s + (c.impressions ?? 0), 0)
     const totalClicks = syncedCampaigns.reduce((s, c) => s + (c.clicks ?? 0), 0)
 
-    return res.status(200).json({
+    return json({
       sync: {
         platform: 'meta',
         synced_at: new Date().toISOString(),
@@ -111,6 +116,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   } catch (err) {
     console.error('Meta sync error:', err)
-    return res.status(500).json({ error: 'Falha ao sincronizar Meta Ads. Verifique suas credenciais.' })
+    return json({ error: 'Falha ao sincronizar Meta Ads. Verifique suas credenciais.' }, 500)
   }
 }

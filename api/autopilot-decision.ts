@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um gestor sênior de tráfego pago responsável por um sistema de auto-pilot de anúncios em tempo real.
 
@@ -42,15 +43,19 @@ REGRAS:
 - Mínimo 3 próximas ações, máximo 5
 - Mínimo 2 alertas`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { sessionData } = req.body as { sessionData: string }
+  const { sessionData } = (await req.json()) as { sessionData: string }
 
   if (!sessionData) {
-    return res.status(400).json({ error: 'Session data is required' })
+    return json({ error: 'Session data is required' }, 400)
   }
 
   try {
@@ -68,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      return res.status(500).json({ error: 'Unexpected response type from AI' })
+      return json({ error: 'Unexpected response type from AI' }, 500)
     }
 
     let jsonText = content.text.trim()
@@ -76,13 +81,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) })
+      return json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422)
     }
 
     const analysis = JSON.parse(jsonMatch[0])
-    return res.status(200).json({ analysis })
+    return json({ analysis })
   } catch (err) {
     console.error('Autopilot decision API error:', err)
-    return res.status(500).json({ error: 'Failed to generate analysis. Please try again.' })
+    return json({ error: 'Failed to generate analysis. Please try again.' }, 500)
   }
 }

@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um motor de previsão de performance de anúncios de tráfego pago. Com base no histórico de aprendizado da conta e na descrição de um novo criativo/campanha, gere previsões precisas de performance.
 
@@ -36,12 +37,16 @@ REGRAS:
 - Se o criativo descrito for similar a um vencedor histórico, aumente confidence e score
 - Forneça exatamente 3 recomendações e 1–2 riscos`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { creativeDescription, channel, objective, modelContext } = req.body as {
+  const { creativeDescription, channel, objective, modelContext } = (await req.json()) as {
     creativeDescription: string
     channel: string
     objective: string
@@ -49,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (!creativeDescription || !modelContext) {
-    return res.status(400).json({ error: 'Creative description and model context required' })
+    return json({ error: 'Creative description and model context required' }, 400)
   }
 
   try {
@@ -77,7 +82,7 @@ Retorne APENAS o JSON válido sem markdown ou texto extra.`,
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      return res.status(500).json({ error: 'Unexpected response type' })
+      return json({ error: 'Unexpected response type' }, 500)
     }
 
     let jsonText = content.text.trim()
@@ -85,12 +90,12 @@ Retorne APENAS o JSON válido sem markdown ou texto extra.`,
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response', raw: jsonText.slice(0, 500) })
+      return json({ error: 'Could not parse AI response', raw: jsonText.slice(0, 500) }, 422)
     }
 
-    return res.status(200).json(JSON.parse(jsonMatch[0]))
+    return json(JSON.parse(jsonMatch[0]))
   } catch (err) {
     console.error('AI Core predict error:', err)
-    return res.status(500).json({ error: 'Failed to generate prediction. Please try again.' })
+    return json({ error: 'Failed to generate prediction. Please try again.' }, 500)
   }
 }

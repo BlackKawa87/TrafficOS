@@ -1,21 +1,27 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk'
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
+export const runtime = 'edge';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+const client = new Anthropic();
+
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return json({ error: 'Method not allowed' }, 405);
   }
 
-  const { type, content, mimeType } = req.body as {
+  const { type, content, mimeType } = (await req.json()) as {
     type: 'pdf' | 'image' | 'text';
     content: string;
     mimeType?: string;
   };
 
   if (!content) {
-    return res.status(400).json({ error: 'Missing content' });
+    return json({ error: 'Missing content' }, 400);
   }
 
   const systemPrompt = `Você é um assistente especializado em transferências de futebol. Analise o conteúdo fornecido e extraia informações estruturadas sobre pedidos de clubes e/ou jogadores.
@@ -110,13 +116,13 @@ Regras:
     const text = message.content[0].type === 'text' ? message.content[0].text : '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response', raw: text });
+      return json({ error: 'Could not parse AI response', raw: text }, 422);
     }
 
     const result = JSON.parse(jsonMatch[0]);
-    return res.status(200).json(result);
+    return json(result);
   } catch (err) {
     console.error('Import API error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    return json({ error: 'Internal server error' }, 500);
   }
 }

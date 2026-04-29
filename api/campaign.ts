@@ -1,9 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
+
+export const runtime = 'edge'
 
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
+const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Você é um estrategista sênior de tráfego pago, mídia performance e lançamento de produtos digitais.
 
@@ -119,15 +120,19 @@ SCHEMA JSON OBRIGATÓRIO:
   "proximo_passo": "<ação concreta e específica que o usuário deve tomar AGORA após gerar esta campanha>"
 }`
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+const json = (data: unknown, status = 200): Response =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { campaignData } = req.body as { campaignData: string }
+  const { campaignData } = (await req.json()) as { campaignData: string }
 
   if (!campaignData) {
-    return res.status(400).json({ error: 'Campaign data is required' })
+    return json({ error: 'Campaign data is required' }, 400)
   }
 
   try {
@@ -150,7 +155,7 @@ Retorne APENAS o JSON válido conforme o schema.`,
 
     const content = message.content[0]
     if (content.type !== 'text') {
-      return res.status(500).json({ error: 'Unexpected response type from AI' })
+      return json({ error: 'Unexpected response type from AI' }, 500)
     }
 
     let jsonText = content.text.trim()
@@ -158,13 +163,13 @@ Retorne APENAS o JSON válido conforme o schema.`,
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return res.status(422).json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) })
+      return json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422)
     }
 
     const strategy = JSON.parse(jsonMatch[0])
-    return res.status(200).json({ strategy })
+    return json({ strategy })
   } catch (err) {
     console.error('Campaign API error:', err)
-    return res.status(500).json({ error: 'Failed to generate campaign strategy. Please try again.' })
+    return json({ error: 'Failed to generate campaign strategy. Please try again.' }, 500)
   }
 }
