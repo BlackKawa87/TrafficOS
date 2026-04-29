@@ -381,7 +381,9 @@ export default function PipelinePage() {
     const existing = tosDb.pipelines.getActiveByProduct(productId)
     if (existing) {
       setPipeline(existing)
-      const firstPending = existing.stages.findIndex(s => s.status !== 'approved' && s.status !== 'pending' || s.status === 'awaiting_approval')
+      const firstPending = existing.stages.findIndex(s =>
+        s.status === 'awaiting_approval' || s.status === 'running' || s.status === 'error'
+      )
       setActiveStageIdx(Math.max(0, firstPending === -1 ? existing.stages.length - 1 : firstPending))
     } else {
       const p: Pipeline = {
