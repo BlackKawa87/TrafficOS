@@ -20,6 +20,16 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'pipeline',
+    label: '⚡ Pipeline IA',
+    labelEn: '⚡ AI Pipeline',
+    icon: '⚡',
+    items: [
+      { path: '/produtos/novo', label: 'Novo Pipeline', icon: '➕' },
+      { path: '/produtos', label: 'Produtos Ativos', icon: '📦' },
+    ],
+  },
+  {
     id: 'traffic',
     label: 'Tráfego',
     labelEn: 'Traffic',
@@ -108,13 +118,15 @@ function LayoutInner() {
   // Auto-expand the group that contains the active route
   useEffect(() => {
     const active = location.pathname
-    const groupId = NAV_GROUPS.find(g =>
-      g.items.some(item =>
-        item.end
-          ? active === item.path
-          : active === item.path || active.startsWith(item.path + '/')
-      )
-    )?.id
+    const groupId = active.startsWith('/pipeline')
+      ? 'pipeline'
+      : NAV_GROUPS.find(g =>
+          g.items.some(item =>
+            item.end
+              ? active === item.path
+              : active === item.path || active.startsWith(item.path + '/')
+          )
+        )?.id
     if (groupId) {
       setOpen(prev => {
         if (prev[groupId]) return prev
@@ -135,6 +147,7 @@ function LayoutInner() {
 
   function isGroupActive(group: NavGroup) {
     const active = location.pathname
+    if (group.id === 'pipeline' && active.startsWith('/pipeline')) return true
     return group.items.some(item =>
       item.end
         ? active === item.path

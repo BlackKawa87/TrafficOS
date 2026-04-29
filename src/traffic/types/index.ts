@@ -1800,3 +1800,28 @@ export interface Relatorio {
   status: RelatorioStatus
   created_at: string
 }
+
+// ─── Pipeline (automated product-to-launch workflow) ──────────────────────────
+export type PipelineMode = 'semi_auto' | 'full_auto'
+export type PipelineStageStatus = 'pending' | 'running' | 'awaiting_approval' | 'approved' | 'error'
+export type PipelineStageId = 'diagnostico' | 'campanha' | 'criativos' | 'compliance' | 'plano' | 'lancamento'
+
+export interface PipelineStage {
+  id: PipelineStageId
+  status: PipelineStageStatus
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  result?: any
+  error?: string
+  started_at?: string
+  approved_at?: string
+}
+
+export interface Pipeline {
+  id: string
+  product_id: string
+  mode: PipelineMode
+  stages: PipelineStage[]
+  completed: boolean
+  created_at: string
+  updated_at: string
+}

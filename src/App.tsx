@@ -49,6 +49,7 @@ import Configuracoes from './traffic/pages/Configuracoes'
 import NovaMetrica from './traffic/pages/NovaMetrica'
 import ImportarMetricas from './traffic/pages/ImportarMetricas'
 import Guia from './traffic/pages/Guia'
+import PipelinePage from './traffic/pages/Pipeline'
 
 function App() {
   return (
@@ -105,6 +106,7 @@ function App() {
           <Route path="prompt-center" element={<PromptCenter />} />
           <Route path="configuracoes" element={<Configuracoes />} />
           <Route path="guia" element={<Guia />} />
+          <Route path="pipeline/:productId" element={<PipelinePage />} />
         </Route>
       </Routes>
     </Router>

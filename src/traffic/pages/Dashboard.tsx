@@ -109,6 +109,9 @@ export default function Dashboard() {
   const allReports   = tosDb.relatorios.getAll()
   const latestReport = allReports.length > 0 ? allReports[0] : null
 
+  // ── pipelines ─────────────────────────────────────────────────────────────
+  const activePipelines = tosDb.pipelines.getAll().filter(p => !p.completed).slice(0, 3)
+
   // ── decisions ─────────────────────────────────────────────────────────────
   const pendingDecisions = decisions
     .filter(d => d.status === 'pending' || d.status === 'in_progress')
@@ -559,6 +562,64 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* Active pipelines */}
+              {activePipelines.length > 0 && (
+                <div className="bg-gray-900 border border-violet-600/30 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-white">⚡ Pipelines Ativos</h2>
+                    <button onClick={() => navigate('/produtos')} className="text-violet-400 text-xs hover:text-violet-300">ver todos →</button>
+                  </div>
+                  <div className="space-y-2">
+                    {activePipelines.map(pl => {
+                      const prod = tosDb.products.getById(pl.product_id)
+                      const done = pl.stages.filter(s => s.status === 'approved').length
+                      const total = pl.stages.length
+                      const current = pl.stages.find(s => s.status === 'running' || s.status === 'awaiting_approval')
+                      return (
+                        <button
+                          key={pl.id}
+                          onClick={() => navigate(`/pipeline/${pl.product_id}`)}
+                          className="w-full flex items-center gap-3 bg-gray-800 hover:bg-gray-700 rounded-lg p-3 text-left transition-colors"
+                        >
+                          <span className="text-lg">⚡</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white text-xs font-medium truncate">{prod?.name ?? 'Produto'}</div>
+                            <div className="text-gray-500 text-[10px]">
+                              {current?.status === 'running' ? '⏳ Processando...' :
+                               current?.status === 'awaiting_approval' ? '👁️ Aguardando aprovação' :
+                               `${done}/${total} etapas`}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-violet-400 text-xs font-bold">{Math.round((done / total) * 100)}%</div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <button
+                    onClick={() => navigate('/produtos/novo')}
+                    className="w-full mt-3 py-2 bg-violet-600/15 hover:bg-violet-600/25 border border-violet-600/30 text-violet-400 text-xs font-medium rounded-lg transition-colors"
+                  >
+                    + Novo Pipeline
+                  </button>
+                </div>
+              )}
+
+              {activePipelines.length === 0 && (
+                <div className="bg-violet-600/10 border border-violet-600/30 rounded-xl p-4 text-center">
+                  <div className="text-2xl mb-2">⚡</div>
+                  <div className="text-white font-semibold text-sm mb-1">Pipeline IA</div>
+                  <p className="text-gray-400 text-xs mb-3">Cadastre um produto e a IA cria campanha, criativos e compliance automaticamente</p>
+                  <button
+                    onClick={() => navigate('/produtos/novo')}
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium rounded-lg transition-colors"
+                  >
+                    Iniciar Pipeline →
+                  </button>
+                </div>
+              )}
+
               {/* Module shortcuts */}
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
                 <h2 className="text-sm font-semibold text-white mb-3">Módulos IA</h2>
@@ -591,17 +652,22 @@ export default function Dashboard() {
         /* ── Empty state ── */
         <div className="mt-4 space-y-5">
           {/* Hero */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+          <div className="bg-gradient-to-br from-violet-600/15 to-gray-900 border border-violet-600/30 rounded-xl p-10 text-center">
             <div className="text-5xl mb-4">⚡</div>
-            <h2 className="text-lg font-bold text-white mb-2">Bem-vindo ao TrafficOS</h2>
-            <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
-              Sua plataforma de inteligência para tráfego pago. Comece cadastrando um produto para gerar campanhas, criativos e análises com IA.
+            <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao TrafficOS</h2>
+            <p className="text-gray-400 text-sm mb-2 max-w-md mx-auto">
+              Cadastre um produto e a IA gera automaticamente:
             </p>
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              {['🔬 Diagnóstico de Oferta', '📢 Estratégia de Campanha', '🎨 3 Criativos', '🛡️ Compliance', '📅 Plano de Lançamento'].map(s => (
+                <span key={s} className="bg-gray-800 text-gray-300 text-xs px-3 py-1 rounded-full border border-gray-700">{s}</span>
+              ))}
+            </div>
             <button
               onClick={() => navigate('/produtos/novo')}
-              className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium py-2.5 px-6 rounded-lg transition-colors"
+              className="bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold py-3 px-8 rounded-xl transition-colors"
             >
-              Cadastrar Primeiro Produto
+              ⚡ Iniciar Pipeline IA →
             </button>
           </div>
 

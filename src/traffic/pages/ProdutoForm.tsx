@@ -110,7 +110,12 @@ export default function ProdutoForm() {
       updated_at: now(),
     }
     tosDb.products.save(product)
-    navigate(`/produtos/${product.id}`)
+    // New products → enter automated pipeline; edits → back to product detail
+    if (isEdit) {
+      navigate(`/produtos/${product.id}`)
+    } else {
+      navigate(`/pipeline/${product.id}`)
+    }
   }
 
   return (

@@ -1,4 +1,4 @@
-import type { Product, OfferDiagnosis, Campaign, Creative, Metric, AIDecision, PromptTemplate, AIOfferDiagnosis, AICampaign, AICreative, PerformanceInsight, DailyPlan, LandingPage, ScaleOpportunity, RemarketingStrategy, ExpansaoPlan, EmailSequence, WhatsappFlow, VslScript, MetaCredentials, TikTokCredentials, PlatformSync, LearningPattern, IntelligenceReport, AutoPilotSession, AutoTestSession, AICoreModel, MultiProductSession, FullAutoSession, VideoAIVideo, LandingPublisherPage, CloudOpsState, ComplianceCheck, Relatorio } from '../types'
+import type { Product, OfferDiagnosis, Campaign, Creative, Metric, AIDecision, PromptTemplate, AIOfferDiagnosis, AICampaign, AICreative, PerformanceInsight, DailyPlan, LandingPage, ScaleOpportunity, RemarketingStrategy, ExpansaoPlan, EmailSequence, WhatsappFlow, VslScript, MetaCredentials, TikTokCredentials, PlatformSync, LearningPattern, IntelligenceReport, AutoPilotSession, AutoTestSession, AICoreModel, MultiProductSession, FullAutoSession, VideoAIVideo, LandingPublisherPage, CloudOpsState, ComplianceCheck, Relatorio, Pipeline } from '../types'
 
 const SEEDS_KEY = 'tos_seeds_v23'
 
@@ -542,6 +542,7 @@ const KEYS = {
   complianceChecks: 'tos_compliance_checks',
   relatorios: 'tos_relatorios',
   prompts: 'tos_prompts',
+  pipelines: 'tos_pipelines',
   // aiCoreModel stored separately (not in KEYS — single object, not array)
 }
 
@@ -1160,6 +1161,28 @@ export const tosDb = {
     const idx = all.findIndex(c => c.id === creativeId)
     if (idx >= 0) all[idx] = updated
     saveAll(KEYS.aiCreatives, all)
+  },
+
+  pipelines: {
+    getAll: (): Pipeline[] =>
+      getAll<Pipeline>(KEYS.pipelines).sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    getById: (id: string): Pipeline | null =>
+      getAll<Pipeline>(KEYS.pipelines).find(p => p.id === id) ?? null,
+    getByProduct: (productId: string): Pipeline[] =>
+      getAll<Pipeline>(KEYS.pipelines).filter(p => p.product_id === productId),
+    getActiveByProduct: (productId: string): Pipeline | null => {
+      const all = getAll<Pipeline>(KEYS.pipelines).filter(p => p.product_id === productId && !p.completed)
+      return all[0] ?? null
+    },
+    save: (p: Pipeline): void => {
+      const all = getAll<Pipeline>(KEYS.pipelines)
+      const idx = all.findIndex(x => x.id === p.id)
+      if (idx >= 0) all[idx] = p
+      else all.push(p)
+      saveAll(KEYS.pipelines, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.pipelines, getAll<Pipeline>(KEYS.pipelines).filter(p => p.id !== id)),
   },
 
   exportAll: (): string => {
