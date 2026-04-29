@@ -110,10 +110,27 @@ function getInitialOpen(): Record<string, boolean> {
 }
 
 // ─── Inner component ─────────────────────────────────────────────────────────
+const AI_LANGS = [
+  { code: 'pt-BR', flag: '🇧🇷', short: 'PT' },
+  { code: 'en-US', flag: '🇺🇸', short: 'EN' },
+  { code: 'es',    flag: '🇪🇸', short: 'ES' },
+  { code: 'fr',    flag: '🇫🇷', short: 'FR' },
+  { code: 'de',    flag: '🇩🇪', short: 'DE' },
+  { code: 'it',    flag: '🇮🇹', short: 'IT' },
+]
+
 function LayoutInner() {
   const { lang, setLang } = useLanguage()
   const location = useLocation()
   const [open, setOpen] = useState<Record<string, boolean>>(getInitialOpen)
+  const [aiLang, setAiLangState] = useState<string>(
+    () => localStorage.getItem('tos_ai_lang') ?? 'pt-BR'
+  )
+
+  function setAiLang(code: string) {
+    setAiLangState(code)
+    localStorage.setItem('tos_ai_lang', code)
+  }
 
   // Auto-expand the group that contains the active route
   useEffect(() => {
@@ -241,30 +258,58 @@ function LayoutInner() {
           })}
         </nav>
 
-        {/* Language toggle */}
-        <div className="px-4 py-3 border-t border-gray-800">
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">Language / Idioma</div>
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setLang('pt')}
-              className={`flex-1 py-1.5 text-xs rounded-md font-medium transition-colors ${
-                lang === 'pt'
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              PT
-            </button>
-            <button
-              onClick={() => setLang('en')}
-              className={`flex-1 py-1.5 text-xs rounded-md font-medium transition-colors ${
-                lang === 'en'
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              EN
-            </button>
+        {/* Language toggles */}
+        <div className="px-4 py-3 border-t border-gray-800 space-y-3">
+          {/* UI language */}
+          <div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">
+              {lang === 'en' ? 'Interface' : 'Interface'}
+            </div>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => setLang('pt')}
+                className={`flex-1 py-1.5 text-xs rounded-md font-medium transition-colors ${
+                  lang === 'pt'
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                🇧🇷 PT
+              </button>
+              <button
+                onClick={() => setLang('en')}
+                className={`flex-1 py-1.5 text-xs rounded-md font-medium transition-colors ${
+                  lang === 'en'
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                🇺🇸 EN
+              </button>
+            </div>
+          </div>
+
+          {/* AI output language */}
+          <div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">
+              🤖 {lang === 'en' ? 'AI Language' : 'Idioma da IA'}
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              {AI_LANGS.map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => setAiLang(l.code)}
+                  title={l.code}
+                  className={`py-1.5 text-xs rounded-md font-medium transition-colors ${
+                    aiLang === l.code
+                      ? 'bg-violet-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  {l.flag} {l.short}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </aside>
