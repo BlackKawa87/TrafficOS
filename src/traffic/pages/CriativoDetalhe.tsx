@@ -10,7 +10,7 @@ import {
   CREATIVE_OBJECTIVE_LABELS,
   AI_CREATIVE_STATUS_LABELS,
 } from '../utils/helpers'
-import type { AICreativeStatus, AICreative } from '../types'
+import type { AICreativeStatus, AICreative, CreativeStrategy } from '../types'
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 
@@ -162,7 +162,58 @@ export default function CriativoDetalhe() {
   const product = tosDb.products.getById(creative.product_id)
   const campaign = creative.campaign_id ? tosDb.aiCampaigns.getById(creative.campaign_id) : null
   const allCampaigns = tosDb.aiCampaigns.getAll()
-  const s = creative.strategy
+  // Normalize strategy — guard against missing/null fields that would crash .map()
+  const raw = (creative.strategy ?? {}) as Partial<CreativeStrategy>
+  const s: CreativeStrategy = {
+    nome:              raw.nome              ?? '',
+    ideia_central:     raw.ideia_central     ?? '',
+    hooks:             Array.isArray(raw.hooks)              ? raw.hooks              : [],
+    roteiro: {
+      hook:     raw.roteiro?.hook     ?? '',
+      problema: raw.roteiro?.problema ?? '',
+      agitacao: raw.roteiro?.agitacao ?? '',
+      solucao:  raw.roteiro?.solucao  ?? '',
+      cta:      raw.roteiro?.cta      ?? '',
+      duracao:  raw.roteiro?.duracao  ?? '',
+    },
+    cenas:             Array.isArray(raw.cenas)              ? raw.cenas              : undefined,
+    variacoes_roteiro: Array.isArray(raw.variacoes_roteiro)  ? raw.variacoes_roteiro  : [],
+    texto_anuncio: {
+      textos_principais: Array.isArray(raw.texto_anuncio?.textos_principais) ? raw.texto_anuncio!.textos_principais : [],
+      headlines:         Array.isArray(raw.texto_anuncio?.headlines)         ? raw.texto_anuncio!.headlines         : [],
+      descricoes:        Array.isArray(raw.texto_anuncio?.descricoes)        ? raw.texto_anuncio!.descricoes        : [],
+      ctas:              Array.isArray(raw.texto_anuncio?.ctas)              ? raw.texto_anuncio!.ctas              : [],
+    },
+    direcao_criativa: {
+      como_gravar: raw.direcao_criativa?.como_gravar ?? '',
+      cenario:     raw.direcao_criativa?.cenario     ?? '',
+      tipo_pessoa: raw.direcao_criativa?.tipo_pessoa ?? '',
+      estilo:      raw.direcao_criativa?.estilo      ?? '',
+      tom_voz:     raw.direcao_criativa?.tom_voz     ?? '',
+      edicao:      raw.direcao_criativa?.edicao      ?? '',
+    },
+    direcao_gravacao:  raw.direcao_gravacao,
+    direcao_edicao:    raw.direcao_edicao,
+    imagem_tipo:       raw.imagem_tipo,
+    imagem_layout:     raw.imagem_layout,
+    imagem_texto:      raw.imagem_texto,
+    imagem_variacoes:  Array.isArray(raw.imagem_variacoes)   ? raw.imagem_variacoes   : undefined,
+    imagem_estilo:     raw.imagem_estilo,
+    imagem_referencia: raw.imagem_referencia,
+    referencia_visual: raw.referencia_visual  ?? '',
+    variacoes_teste:   Array.isArray(raw.variacoes_teste)    ? raw.variacoes_teste    : [],
+    hipotese:          raw.hipotese           ?? '',
+    metricas_esperadas: {
+      ctr_esperado: raw.metricas_esperadas?.ctr_esperado ?? '—',
+      cpc_esperado: raw.metricas_esperadas?.cpc_esperado ?? '—',
+      cpa_esperado: raw.metricas_esperadas?.cpa_esperado ?? '—',
+    },
+    recomendacoes: {
+      quando_usar:    raw.recomendacoes?.quando_usar    ?? '',
+      quando_pausar:  raw.recomendacoes?.quando_pausar  ?? '',
+      quando_escalar: raw.recomendacoes?.quando_escalar ?? '',
+    },
+  }
   const isImageCreative = ['imagem', 'carrossel'].includes(creative.creative_type)
 
   function update(patch: Partial<AICreative>) {
