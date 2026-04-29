@@ -240,12 +240,20 @@ ${JSON.stringify(recentMetrics, null, 2)}`
           <h1 className="text-2xl font-bold text-white">Métricas</h1>
           <p className="text-gray-400 text-sm mt-1">{allMetrics.length} registros · {allCreatives.filter(c => c.spend > 0).length} criativos com dados</p>
         </div>
-        <button
-          onClick={() => navigate('/metricas/novo')}
-          className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors"
-        >
-          + Nova Métrica
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/metricas/importar')}
+            className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors border border-gray-700 flex items-center gap-2"
+          >
+            📂 Importar CSV
+          </button>
+          <button
+            onClick={() => navigate('/metricas/novo')}
+            className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-colors"
+          >
+            + Nova Métrica
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

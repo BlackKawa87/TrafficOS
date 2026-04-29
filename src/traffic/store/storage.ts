@@ -1,6 +1,6 @@
-import type { Product, OfferDiagnosis, Campaign, Creative, Metric, AIDecision, PromptTemplate, AIOfferDiagnosis, AICampaign, AICreative, PerformanceInsight, DailyPlan, LandingPage } from '../types'
+import type { Product, OfferDiagnosis, Campaign, Creative, Metric, AIDecision, PromptTemplate, AIOfferDiagnosis, AICampaign, AICreative, PerformanceInsight, DailyPlan, LandingPage, ScaleOpportunity, RemarketingStrategy, ExpansaoPlan, EmailSequence, WhatsappFlow, VslScript, MetaCredentials, TikTokCredentials, PlatformSync, LearningPattern, IntelligenceReport, AutoPilotSession, AutoTestSession, AICoreModel, MultiProductSession, FullAutoSession, VideoAIVideo, LandingPublisherPage, CloudOpsState, ComplianceCheck, Relatorio } from '../types'
 
-const SEEDS_KEY = 'tos_seeds_v9'
+const SEEDS_KEY = 'tos_seeds_v23'
 
 const DEFAULT_PROMPTS: Omit<PromptTemplate, 'id' | 'created_at' | 'updated_at'>[] = [
   {
@@ -399,6 +399,48 @@ Para cada decisão, gere:
 Seja crítico, direto e orientado para ROI. Não gere recomendações genéricas.`,
   },
   {
+    name: 'Motor de Escala e Otimização',
+    category: 'Escala e Otimização',
+    description: 'Analisa campanhas, criativos e métricas para gerar oportunidades priorizadas de escala, duplicação, otimização e expansão com critérios de risco e limite de ação.',
+    variables: ['productData', 'campaignData', 'creativeData', 'metricsData'],
+    template: `Você é um especialista em escala de tráfego pago e otimização de ROI.
+
+Sua função é analisar os dados fornecidos e gerar oportunidades de escala e otimização priorizadas por impacto.
+
+Dados do produto:
+{{productData}}
+
+Campanhas e criativos:
+{{campaignData}}
+
+Criativos:
+{{creativeData}}
+
+Métricas:
+{{metricsData}}
+
+Para cada oportunidade, gere:
+1. Título da ação
+2. Tipo: escalar_orcamento | duplicar_campanha | duplicar_conjunto | criar_variacao_criativo | expandir_publico | criar_remarketing | replicar_canal | ajustar_oferta | pausar_campanha | continuar_teste
+3. Prioridade: baixa | media | alta | critica
+4. Motivo (baseado nos dados reais)
+5. Dados que justificam (métricas exatas)
+6. Potencial de ganho: baixo | medio | alto
+7. Nível de risco: baixo | medio | alto
+8. Confiança: baixo | medio | alto
+9. Ação recomendada (passo a passo)
+10. Limite da ação (seguro)
+11. Próximo passo
+
+Regras obrigatórias:
+- CPA abaixo da meta + volume → escalar_orcamento
+- CTR > 2% + conversão boa → duplicar campanha
+- CTR alto + conversão baixa → ajustar oferta
+- Criativo com ROAS ≥ 2x → criar variação
+- Sem dados suficientes → continuar_teste
+- Pausar: gasto alto + zero resultado`,
+  },
+  {
     name: 'Gerador de Criativos de Alta Conversão',
     category: 'Criação de Criativos',
     description: 'Gera criativos completos para campanhas de tráfego pago com base em produto, campanha e diagnóstico de oferta.',
@@ -483,7 +525,24 @@ const KEYS = {
   decisions: 'tos_decisions',
   dailyPlans: 'tos_daily_plans',
   landingPages: 'tos_landing_pages',
+  scaleOpportunities: 'tos_scale_opportunities',
+  remarketingStrategies: 'tos_remarketing_strategies',
+  expansaoPlans: 'tos_expansao_plans',
+  emailSequences: 'tos_email_sequences',
+  whatsappFlows: 'tos_whatsapp_flows',
+  vslScripts: 'tos_vsl_scripts',
+  learningPatterns: 'tos_learning_patterns',
+  intelligenceReports: 'tos_intelligence_reports',
+  autoPilotSessions: 'tos_autopilot_sessions',
+  autoTestSessions: 'tos_autotest_sessions',
+  multiProductSessions: 'tos_multi_product_sessions',
+  fullAutoSessions: 'tos_full_auto_sessions',
+  videoAiVideos: 'tos_video_ai_videos',
+  landingPublisherPages: 'tos_landing_publisher_pages',
+  complianceChecks: 'tos_compliance_checks',
+  relatorios: 'tos_relatorios',
   prompts: 'tos_prompts',
+  // aiCoreModel stored separately (not in KEYS — single object, not array)
 }
 
 function getAll<T>(key: string): T[] {
@@ -725,6 +784,346 @@ export const tosDb = {
     },
     delete: (id: string): void =>
       saveAll(KEYS.dailyPlans, getAll<DailyPlan>(KEYS.dailyPlans).filter(p => p.id !== id)),
+  },
+
+  scaleOpportunities: {
+    getAll: (): ScaleOpportunity[] => getAll<ScaleOpportunity>(KEYS.scaleOpportunities),
+    getByProduct: (productId: string): ScaleOpportunity[] =>
+      getAll<ScaleOpportunity>(KEYS.scaleOpportunities).filter(o => o.product_id === productId),
+    getById: (id: string): ScaleOpportunity | null =>
+      getAll<ScaleOpportunity>(KEYS.scaleOpportunities).find(o => o.id === id) ?? null,
+    save: (o: ScaleOpportunity): void => {
+      const all = getAll<ScaleOpportunity>(KEYS.scaleOpportunities)
+      const idx = all.findIndex(x => x.id === o.id)
+      if (idx >= 0) all[idx] = o
+      else all.push(o)
+      saveAll(KEYS.scaleOpportunities, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.scaleOpportunities, getAll<ScaleOpportunity>(KEYS.scaleOpportunities).filter(o => o.id !== id)),
+  },
+
+  whatsappFlows: {
+    getAll: (): WhatsappFlow[] => getAll<WhatsappFlow>(KEYS.whatsappFlows),
+    getByProduct: (productId: string): WhatsappFlow[] =>
+      getAll<WhatsappFlow>(KEYS.whatsappFlows).filter(f => f.product_id === productId),
+    getById: (id: string): WhatsappFlow | null =>
+      getAll<WhatsappFlow>(KEYS.whatsappFlows).find(f => f.id === id) ?? null,
+    save: (f: WhatsappFlow): void => {
+      const all = getAll<WhatsappFlow>(KEYS.whatsappFlows)
+      const idx = all.findIndex(x => x.id === f.id)
+      if (idx >= 0) all[idx] = f
+      else all.push(f)
+      saveAll(KEYS.whatsappFlows, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.whatsappFlows, getAll<WhatsappFlow>(KEYS.whatsappFlows).filter(f => f.id !== id)),
+  },
+
+  emailSequences: {
+    getAll: (): EmailSequence[] => getAll<EmailSequence>(KEYS.emailSequences),
+    getByProduct: (productId: string): EmailSequence[] =>
+      getAll<EmailSequence>(KEYS.emailSequences).filter(s => s.product_id === productId),
+    getById: (id: string): EmailSequence | null =>
+      getAll<EmailSequence>(KEYS.emailSequences).find(s => s.id === id) ?? null,
+    save: (s: EmailSequence): void => {
+      const all = getAll<EmailSequence>(KEYS.emailSequences)
+      const idx = all.findIndex(x => x.id === s.id)
+      if (idx >= 0) all[idx] = s
+      else all.push(s)
+      saveAll(KEYS.emailSequences, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.emailSequences, getAll<EmailSequence>(KEYS.emailSequences).filter(s => s.id !== id)),
+  },
+
+  expansaoPlans: {
+    getAll: (): ExpansaoPlan[] => getAll<ExpansaoPlan>(KEYS.expansaoPlans),
+    getByProduct: (productId: string): ExpansaoPlan[] =>
+      getAll<ExpansaoPlan>(KEYS.expansaoPlans).filter(p => p.product_id === productId),
+    getById: (id: string): ExpansaoPlan | null =>
+      getAll<ExpansaoPlan>(KEYS.expansaoPlans).find(p => p.id === id) ?? null,
+    save: (p: ExpansaoPlan): void => {
+      const all = getAll<ExpansaoPlan>(KEYS.expansaoPlans)
+      const idx = all.findIndex(x => x.id === p.id)
+      if (idx >= 0) all[idx] = p
+      else all.push(p)
+      saveAll(KEYS.expansaoPlans, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.expansaoPlans, getAll<ExpansaoPlan>(KEYS.expansaoPlans).filter(p => p.id !== id)),
+  },
+
+  vslScripts: {
+    getAll: (): VslScript[] => getAll<VslScript>(KEYS.vslScripts),
+    getByProduct: (productId: string): VslScript[] =>
+      getAll<VslScript>(KEYS.vslScripts).filter(v => v.product_id === productId),
+    getById: (id: string): VslScript | null =>
+      getAll<VslScript>(KEYS.vslScripts).find(v => v.id === id) ?? null,
+    save: (v: VslScript): void => {
+      const all = getAll<VslScript>(KEYS.vslScripts)
+      const idx = all.findIndex(x => x.id === v.id)
+      if (idx >= 0) all[idx] = v
+      else all.push(v)
+      saveAll(KEYS.vslScripts, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.vslScripts, getAll<VslScript>(KEYS.vslScripts).filter(v => v.id !== id)),
+  },
+
+  remarketingStrategies: {
+    getAll: (): RemarketingStrategy[] => getAll<RemarketingStrategy>(KEYS.remarketingStrategies),
+    getByProduct: (productId: string): RemarketingStrategy[] =>
+      getAll<RemarketingStrategy>(KEYS.remarketingStrategies).filter(s => s.product_id === productId),
+    getById: (id: string): RemarketingStrategy | null =>
+      getAll<RemarketingStrategy>(KEYS.remarketingStrategies).find(s => s.id === id) ?? null,
+    save: (s: RemarketingStrategy): void => {
+      const all = getAll<RemarketingStrategy>(KEYS.remarketingStrategies)
+      const idx = all.findIndex(x => x.id === s.id)
+      if (idx >= 0) all[idx] = s
+      else all.push(s)
+      saveAll(KEYS.remarketingStrategies, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.remarketingStrategies, getAll<RemarketingStrategy>(KEYS.remarketingStrategies).filter(s => s.id !== id)),
+  },
+
+  learningPatterns: {
+    getAll: (): LearningPattern[] =>
+      getAll<LearningPattern>(KEYS.learningPatterns)
+        .sort((a, b) => b.performance_score - a.performance_score),
+    getByType: (tipo: string): LearningPattern[] =>
+      getAll<LearningPattern>(KEYS.learningPatterns).filter(p => p.tipo === tipo),
+    getByProduct: (productId: string): LearningPattern[] =>
+      getAll<LearningPattern>(KEYS.learningPatterns).filter(p => p.product_id === productId),
+    getById: (id: string): LearningPattern | null =>
+      getAll<LearningPattern>(KEYS.learningPatterns).find(p => p.id === id) ?? null,
+    save: (p: LearningPattern): void => {
+      const all = getAll<LearningPattern>(KEYS.learningPatterns)
+      const idx = all.findIndex(x => x.id === p.id)
+      if (idx >= 0) all[idx] = p
+      else all.push(p)
+      saveAll(KEYS.learningPatterns, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.learningPatterns, getAll<LearningPattern>(KEYS.learningPatterns).filter(p => p.id !== id)),
+  },
+
+  intelligenceReports: {
+    getAll: (): IntelligenceReport[] =>
+      getAll<IntelligenceReport>(KEYS.intelligenceReports)
+        .sort((a, b) => b.generated_at.localeCompare(a.generated_at)),
+    getLatest: (): IntelligenceReport | null => {
+      const all = getAll<IntelligenceReport>(KEYS.intelligenceReports)
+        .sort((a, b) => b.generated_at.localeCompare(a.generated_at))
+      return all[0] ?? null
+    },
+    getById: (id: string): IntelligenceReport | null =>
+      getAll<IntelligenceReport>(KEYS.intelligenceReports).find(r => r.id === id) ?? null,
+    save: (r: IntelligenceReport): void => {
+      const all = getAll<IntelligenceReport>(KEYS.intelligenceReports)
+      const idx = all.findIndex(x => x.id === r.id)
+      if (idx >= 0) all[idx] = r
+      else all.push(r)
+      saveAll(KEYS.intelligenceReports, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.intelligenceReports, getAll<IntelligenceReport>(KEYS.intelligenceReports).filter(r => r.id !== id)),
+  },
+
+  relatorios: {
+    getAll: (): Relatorio[] =>
+      getAll<Relatorio>(KEYS.relatorios)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    getById: (id: string): Relatorio | null =>
+      getAll<Relatorio>(KEYS.relatorios).find(r => r.id === id) ?? null,
+    save: (r: Relatorio): void => {
+      const all = getAll<Relatorio>(KEYS.relatorios)
+      const idx = all.findIndex(x => x.id === r.id)
+      if (idx >= 0) all[idx] = r
+      else all.push(r)
+      saveAll(KEYS.relatorios, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.relatorios, getAll<Relatorio>(KEYS.relatorios).filter(r => r.id !== id)),
+  },
+
+  complianceChecks: {
+    getAll: (): ComplianceCheck[] =>
+      getAll<ComplianceCheck>(KEYS.complianceChecks)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    getById: (id: string): ComplianceCheck | null =>
+      getAll<ComplianceCheck>(KEYS.complianceChecks).find(c => c.id === id) ?? null,
+    getByProduct: (productId: string): ComplianceCheck[] =>
+      getAll<ComplianceCheck>(KEYS.complianceChecks).filter(c => c.product_id === productId),
+    save: (c: ComplianceCheck): void => {
+      const all = getAll<ComplianceCheck>(KEYS.complianceChecks)
+      const idx = all.findIndex(x => x.id === c.id)
+      if (idx >= 0) all[idx] = c
+      else all.push(c)
+      saveAll(KEYS.complianceChecks, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.complianceChecks, getAll<ComplianceCheck>(KEYS.complianceChecks).filter(c => c.id !== id)),
+  },
+
+  cloudOps: {
+    get: (): CloudOpsState | null => {
+      try { return JSON.parse(localStorage.getItem('tos_cloud_ops') ?? 'null') } catch { return null }
+    },
+    save: (s: CloudOpsState): void => localStorage.setItem('tos_cloud_ops', JSON.stringify(s)),
+    clear: (): void => localStorage.removeItem('tos_cloud_ops'),
+  },
+
+  aiCoreModel: {
+    get: (): AICoreModel | null => {
+      try { return JSON.parse(localStorage.getItem('tos_ai_core_model') ?? 'null') } catch { return null }
+    },
+    save: (m: AICoreModel): void => localStorage.setItem('tos_ai_core_model', JSON.stringify(m)),
+    clear: (): void => localStorage.removeItem('tos_ai_core_model'),
+  },
+
+  autoTestSessions: {
+    getAll: (): AutoTestSession[] =>
+      getAll<AutoTestSession>(KEYS.autoTestSessions)
+        .sort((a, b) => b.started_at.localeCompare(a.started_at)),
+    getActive: (): AutoTestSession | null => {
+      const all = getAll<AutoTestSession>(KEYS.autoTestSessions)
+      return all.find(s => s.status === 'ativo' || s.status === 'pausado') ?? null
+    },
+    getById: (id: string): AutoTestSession | null =>
+      getAll<AutoTestSession>(KEYS.autoTestSessions).find(s => s.id === id) ?? null,
+    save: (s: AutoTestSession): void => {
+      const all = getAll<AutoTestSession>(KEYS.autoTestSessions)
+      const idx = all.findIndex(x => x.id === s.id)
+      if (idx >= 0) all[idx] = s
+      else all.push(s)
+      saveAll(KEYS.autoTestSessions, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.autoTestSessions, getAll<AutoTestSession>(KEYS.autoTestSessions).filter(s => s.id !== id)),
+  },
+
+  autoPilotSessions: {
+    getAll: (): AutoPilotSession[] =>
+      getAll<AutoPilotSession>(KEYS.autoPilotSessions)
+        .sort((a, b) => b.started_at.localeCompare(a.started_at)),
+    getActive: (): AutoPilotSession | null => {
+      const all = getAll<AutoPilotSession>(KEYS.autoPilotSessions)
+      return all.find(s => s.status === 'running' || s.status === 'paused') ?? null
+    },
+    getById: (id: string): AutoPilotSession | null =>
+      getAll<AutoPilotSession>(KEYS.autoPilotSessions).find(s => s.id === id) ?? null,
+    save: (s: AutoPilotSession): void => {
+      const all = getAll<AutoPilotSession>(KEYS.autoPilotSessions)
+      const idx = all.findIndex(x => x.id === s.id)
+      if (idx >= 0) all[idx] = s
+      else all.push(s)
+      saveAll(KEYS.autoPilotSessions, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.autoPilotSessions, getAll<AutoPilotSession>(KEYS.autoPilotSessions).filter(s => s.id !== id)),
+  },
+
+  multiProductSessions: {
+    getAll: (): MultiProductSession[] =>
+      getAll<MultiProductSession>(KEYS.multiProductSessions)
+        .sort((a, b) => b.started_at.localeCompare(a.started_at)),
+    getActive: (): MultiProductSession | null => {
+      const all = getAll<MultiProductSession>(KEYS.multiProductSessions)
+      return all.find(s => s.status === 'running' || s.status === 'paused') ?? null
+    },
+    getById: (id: string): MultiProductSession | null =>
+      getAll<MultiProductSession>(KEYS.multiProductSessions).find(s => s.id === id) ?? null,
+    save: (s: MultiProductSession): void => {
+      const all = getAll<MultiProductSession>(KEYS.multiProductSessions)
+      const idx = all.findIndex(x => x.id === s.id)
+      if (idx >= 0) all[idx] = s
+      else all.push(s)
+      saveAll(KEYS.multiProductSessions, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.multiProductSessions, getAll<MultiProductSession>(KEYS.multiProductSessions).filter(s => s.id !== id)),
+  },
+
+  fullAutoSessions: {
+    getAll: (): FullAutoSession[] =>
+      getAll<FullAutoSession>(KEYS.fullAutoSessions)
+        .sort((a, b) => b.started_at.localeCompare(a.started_at)),
+    getActive: (): FullAutoSession | null => {
+      const all = getAll<FullAutoSession>(KEYS.fullAutoSessions)
+      return all.find(s => s.status === 'running' || s.status === 'paused' || s.status === 'emergency_stop') ?? null
+    },
+    getById: (id: string): FullAutoSession | null =>
+      getAll<FullAutoSession>(KEYS.fullAutoSessions).find(s => s.id === id) ?? null,
+    save: (s: FullAutoSession): void => {
+      const all = getAll<FullAutoSession>(KEYS.fullAutoSessions)
+      const idx = all.findIndex(x => x.id === s.id)
+      if (idx >= 0) all[idx] = s
+      else all.push(s)
+      saveAll(KEYS.fullAutoSessions, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.fullAutoSessions, getAll<FullAutoSession>(KEYS.fullAutoSessions).filter(s => s.id !== id)),
+  },
+
+  landingPublisherPages: {
+    getAll: (): LandingPublisherPage[] =>
+      getAll<LandingPublisherPage>(KEYS.landingPublisherPages)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    getById: (id: string): LandingPublisherPage | null =>
+      getAll<LandingPublisherPage>(KEYS.landingPublisherPages).find(p => p.id === id) ?? null,
+    getByProduct: (productId: string): LandingPublisherPage[] =>
+      getAll<LandingPublisherPage>(KEYS.landingPublisherPages).filter(p => p.product_id === productId),
+    save: (p: LandingPublisherPage): void => {
+      const all = getAll<LandingPublisherPage>(KEYS.landingPublisherPages)
+      const idx = all.findIndex(x => x.id === p.id)
+      if (idx >= 0) all[idx] = p
+      else all.push(p)
+      saveAll(KEYS.landingPublisherPages, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.landingPublisherPages, getAll<LandingPublisherPage>(KEYS.landingPublisherPages).filter(p => p.id !== id)),
+  },
+
+  videoAiVideos: {
+    getAll: (): VideoAIVideo[] =>
+      getAll<VideoAIVideo>(KEYS.videoAiVideos)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    getById: (id: string): VideoAIVideo | null =>
+      getAll<VideoAIVideo>(KEYS.videoAiVideos).find(v => v.id === id) ?? null,
+    getByProduct: (productId: string): VideoAIVideo[] =>
+      getAll<VideoAIVideo>(KEYS.videoAiVideos).filter(v => v.product_id === productId),
+    save: (v: VideoAIVideo): void => {
+      const all = getAll<VideoAIVideo>(KEYS.videoAiVideos)
+      const idx = all.findIndex(x => x.id === v.id)
+      if (idx >= 0) all[idx] = v
+      else all.push(v)
+      saveAll(KEYS.videoAiVideos, all)
+    },
+    delete: (id: string): void =>
+      saveAll(KEYS.videoAiVideos, getAll<VideoAIVideo>(KEYS.videoAiVideos).filter(v => v.id !== id)),
+  },
+
+  integrations: {
+    getMeta: (): MetaCredentials | null => {
+      try { return JSON.parse(localStorage.getItem('tos_integration_meta') ?? 'null') } catch { return null }
+    },
+    getTikTok: (): TikTokCredentials | null => {
+      try { return JSON.parse(localStorage.getItem('tos_integration_tiktok') ?? 'null') } catch { return null }
+    },
+    saveMeta: (c: MetaCredentials): void => localStorage.setItem('tos_integration_meta', JSON.stringify(c)),
+    saveTikTok: (c: TikTokCredentials): void => localStorage.setItem('tos_integration_tiktok', JSON.stringify(c)),
+    deleteMeta: (): void => { localStorage.removeItem('tos_integration_meta'); localStorage.removeItem('tos_integration_meta_sync') },
+    deleteTikTok: (): void => { localStorage.removeItem('tos_integration_tiktok'); localStorage.removeItem('tos_integration_tiktok_sync') },
+    getMetaSync: (): PlatformSync | null => {
+      try { return JSON.parse(localStorage.getItem('tos_integration_meta_sync') ?? 'null') } catch { return null }
+    },
+    getTikTokSync: (): PlatformSync | null => {
+      try { return JSON.parse(localStorage.getItem('tos_integration_tiktok_sync') ?? 'null') } catch { return null }
+    },
+    saveMetaSync: (s: PlatformSync): void => localStorage.setItem('tos_integration_meta_sync', JSON.stringify(s)),
+    saveTikTokSync: (s: PlatformSync): void => localStorage.setItem('tos_integration_tiktok_sync', JSON.stringify(s)),
   },
 
   reAggregateCreative: (creativeId: string): void => {

@@ -17,11 +17,37 @@ import DecisoesDetalhe from './traffic/pages/DecisoesDetalhe'
 import PlanoDiario from './traffic/pages/PlanoDiario'
 import PlanoDetalhe from './traffic/pages/PlanoDetalhe'
 import GerarMixCriativo from './traffic/pages/GerarMixCriativo'
+import Escala from './traffic/pages/Escala'
+import EscalaDetalhe from './traffic/pages/EscalaDetalhe'
+import Remarketing from './traffic/pages/Remarketing'
+import RemarketingDetalhe from './traffic/pages/RemarketingDetalhe'
+import Expansao from './traffic/pages/Expansao'
+import ExpansaoDetalhe from './traffic/pages/ExpansaoDetalhe'
+import Email from './traffic/pages/Email'
+import EmailDetalhe from './traffic/pages/EmailDetalhe'
+import Whatsapp from './traffic/pages/Whatsapp'
+import WhatsappDetalhe from './traffic/pages/WhatsappDetalhe'
+import Vsl from './traffic/pages/Vsl'
+import VslDetalhe from './traffic/pages/VslDetalhe'
+import Integracoes from './traffic/pages/Integracoes'
+import Inteligencia from './traffic/pages/Inteligencia'
+import Autopilot from './traffic/pages/Autopilot'
+import AutoTesting from './traffic/pages/AutoTesting'
+import AiCore from './traffic/pages/AiCore'
+import MultiProduto from './traffic/pages/MultiProduto'
+import FullAuto from './traffic/pages/FullAuto'
+import VideoAI from './traffic/pages/VideoAI'
+import LandingPublisher from './traffic/pages/LandingPublisher'
+import CloudOps from './traffic/pages/CloudOps'
+import CommandCenter from './traffic/pages/CommandCenter'
+import Compliance from './traffic/pages/Compliance'
+import Relatorios from './traffic/pages/Relatorios'
 import LandingPages from './traffic/pages/LandingPages'
 import LandingPageDetalhe from './traffic/pages/LandingPageDetalhe'
 import PromptCenter from './traffic/pages/PromptCenter'
 import Configuracoes from './traffic/pages/Configuracoes'
 import NovaMetrica from './traffic/pages/NovaMetrica'
+import ImportarMetricas from './traffic/pages/ImportarMetricas'
 
 function App() {
   return (
@@ -43,8 +69,34 @@ function App() {
           <Route path="criativos/:id" element={<CriativoDetalhe />} />
           <Route path="metricas" element={<Metricas />} />
           <Route path="metricas/novo" element={<NovaMetrica />} />
+          <Route path="metricas/importar" element={<ImportarMetricas />} />
           <Route path="decisoes" element={<DecisoesIA />} />
           <Route path="decisoes/:id" element={<DecisoesDetalhe />} />
+          <Route path="escala" element={<Escala />} />
+          <Route path="escala/:id" element={<EscalaDetalhe />} />
+          <Route path="remarketing" element={<Remarketing />} />
+          <Route path="remarketing/:id" element={<RemarketingDetalhe />} />
+          <Route path="expansao" element={<Expansao />} />
+          <Route path="expansao/:id" element={<ExpansaoDetalhe />} />
+          <Route path="email" element={<Email />} />
+          <Route path="email/:id" element={<EmailDetalhe />} />
+          <Route path="whatsapp" element={<Whatsapp />} />
+          <Route path="whatsapp/:id" element={<WhatsappDetalhe />} />
+          <Route path="vsl" element={<Vsl />} />
+          <Route path="vsl/:id" element={<VslDetalhe />} />
+          <Route path="integracoes" element={<Integracoes />} />
+          <Route path="inteligencia" element={<Inteligencia />} />
+          <Route path="autopilot" element={<Autopilot />} />
+          <Route path="auto-testing" element={<AutoTesting />} />
+          <Route path="ai-core" element={<AiCore />} />
+          <Route path="multi-produto" element={<MultiProduto />} />
+          <Route path="full-auto" element={<FullAuto />} />
+          <Route path="video-ai" element={<VideoAI />} />
+          <Route path="landing-publisher" element={<LandingPublisher />} />
+          <Route path="cloud-ops" element={<CloudOps />} />
+          <Route path="command-center" element={<CommandCenter />} />
+          <Route path="compliance" element={<Compliance />} />
+          <Route path="relatorios" element={<Relatorios />} />
           <Route path="plano-diario" element={<PlanoDiario />} />
           <Route path="plano-diario/:id" element={<PlanoDetalhe />} />
           <Route path="landing-page" element={<LandingPages />} />
