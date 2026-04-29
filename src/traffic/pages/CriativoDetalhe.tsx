@@ -1196,8 +1196,9 @@ export default function CriativoDetalhe() {
                           : isStory    ? '📱 Story'
                           : '🖼️ Imagem'
           const btnLabel  = isVideo    ? 'Gerar Frame-Chave com DALL-E 3'
-                          : isCarousel ? `Gerar ${Math.min((creative.strategy?.imagem_variacoes ?? []).length || 3, 5)} Slides com DALL-E 3`
-                          : 'Gerar Imagem com DALL-E 3'
+                          : isCarousel ? `Gerar ${Math.min((creative.strategy?.imagem_variacoes ?? []).length || 3, 5)} Fundos de Slide com DALL-E 3`
+                          : isStory    ? 'Gerar Fundo de Story com DALL-E 3'
+                          : 'Gerar Fundo Visual com DALL-E 3'
 
           const displayAssets = genDone ? genAssets : savedAssets
 
@@ -1221,12 +1222,24 @@ export default function CriativoDetalhe() {
               </div>
 
               <div className="p-5">
+                {/* Workflow explainer — always visible */}
+                <div className="mb-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg">
+                  <p className="text-xs text-blue-200 leading-relaxed">
+                    <strong className="text-blue-300">⚠️ Como funciona:</strong> O DALL-E 3 gera o <strong>fundo visual</strong> do criativo (sem texto — o modelo não consegue renderizar texto legível).
+                    Baixe a imagem e adicione os textos do briefing acima usando{' '}
+                    <a href="https://canva.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-100">Canva</a>,{' '}
+                    <a href="https://www.figma.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-100">Figma</a>{' '}
+                    ou o <a href="https://www.facebook.com/ads/creativehub" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-100">Meta Creative Hub</a>.
+                    {!isVideo && <> Dimensões: <strong>{isStory ? '1024×1792 (9:16)' : '1024×1024 (1:1)'}</strong> — compatível com Meta Ads Feed{isStory ? ' Stories/Reels' : '/Carrossel'}.</>}
+                  </p>
+                </div>
+
                 {/* Info for videos */}
                 {isVideo && displayAssets.length === 0 && (
                   <div className="mb-4 p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg">
                     <p className="text-xs text-amber-300 leading-relaxed">
-                      <strong>Para vídeos</strong> — geramos o <strong>frame-chave</strong> (cena de abertura/hook) com DALL-E 3, que você usa como referência visual ou thumbnail.
-                      Para o vídeo completo, use o storyboard acima com ferramentas como <strong>Runway, Pika ou CapCut AI</strong>.
+                      <strong>Para vídeos</strong> — geramos o <strong>frame-chave</strong> (cena de abertura/hook) com DALL-E 3 como referência visual ou thumbnail.
+                      Para o vídeo completo, use o storyboard acima com <strong>Runway, Pika ou CapCut AI</strong>.
                     </p>
                   </div>
                 )}
@@ -1305,12 +1318,32 @@ export default function CriativoDetalhe() {
                       ))}
                     </div>
 
+                    {/* Finish in Canva CTA */}
+                    {!isVideo && (
+                      <div className="p-4 bg-emerald-900/20 border border-emerald-700/30 rounded-xl">
+                        <div className="text-xs font-semibold text-emerald-300 mb-2">✏️ Próximo passo — adicione o texto:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { name: '🎨 Canva (recomendado)', url: 'https://canva.com/create/ads/' },
+                            { name: '🖼 Meta Creative Hub', url: 'https://www.facebook.com/ads/creativehub' },
+                            { name: '⚡ Figma', url: 'https://figma.com' },
+                          ].map(tool => (
+                            <a key={tool.name} href={tool.url} target="_blank" rel="noopener noreferrer"
+                              className="text-xs px-3 py-1.5 bg-emerald-900/40 hover:bg-emerald-800/40 border border-emerald-700/30 text-emerald-300 rounded-lg transition-colors">
+                              {tool.name} ↗
+                            </a>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Use o headline, subheadline e CTA da seção "Texto da Imagem" acima.</p>
+                      </div>
+                    )}
+
                     {/* Warning about URL expiry */}
                     <div className="flex items-start gap-2 p-3 bg-amber-900/15 border border-amber-700/20 rounded-lg">
                       <span className="text-amber-400 flex-shrink-0">⚠️</span>
                       <p className="text-xs text-amber-300/80">
-                        URLs de imagem expiram em ~1 hora (limite OpenAI). Faça o download agora.
-                        {isVideo && ' Para gerar o vídeo completo, use o prompt do frame-chave no Runway, Pika ou CapCut AI.'}
+                        URLs expiram em ~1 hora (OpenAI). Faça o download antes de fechar.
+                        {isVideo && ' Para o vídeo completo, use o frame-chave como referência no Runway, Pika ou CapCut AI.'}
                       </p>
                     </div>
 

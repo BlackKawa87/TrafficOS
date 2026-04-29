@@ -14,40 +14,95 @@ function getSize(type: string): DalleSize {
   return '1024x1024'
 }
 
+// ─── Prompt builder ───────────────────────────────────────────────────────────
+// DALL-E 3 cannot render legible text. All prompts generate a CLEAN VISUAL
+// BACKGROUND that the user finishes in Canva / Meta Creative Hub / Figma.
+// The "NO TEXT" instruction must be emphatic and repeated to override DALL-E's
+// tendency to hallucinate garbled letters when it sees words in the input.
+
+const NO_TEXT = 'CRITICAL RULE: absolutely ZERO text, ZERO letters, ZERO words, ZERO numbers, ZERO captions, ZERO logos anywhere in the image — this is a pure photographic background for text overlay.'
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildPrompt(type: string, productName: string, niche: string, strategy: any, slideIdx?: number): string {
-  const idea   = strategy?.ideia_central ?? ''
-  const style  = strategy?.imagem_estilo
-    ? `Style: ${strategy.imagem_estilo.visual ?? strategy.imagem_estilo.estilo ?? ''}. Palette: ${strategy.imagem_estilo.paleta_cores ?? strategy.imagem_estilo.contraste ?? ''}.`
-    : ''
-  const layout = strategy?.imagem_layout
-    ? `Composition: ${strategy.imagem_layout.composicao ?? strategy.imagem_layout.hierarquia_visual ?? ''}. Background: ${strategy.imagem_layout.fundo ?? ''}.`
-    : ''
-  const dir    = strategy?.direcao_criativa
-    ? `Setting: ${strategy.direcao_criativa.cenario ?? ''}. Subject: ${strategy.direcao_criativa.tipo_pessoa ?? ''}. Aesthetic: ${strategy.direcao_criativa.estilo ?? ''}.`
-    : ''
+function buildPrompt(type: string, _productName: string, niche: string, strategy: any, slideIdx?: number): string {
+  // Pull visual descriptors only — never product name / copy (causes DALL-E to render text)
+  const scenery  = strategy?.direcao_criativa?.cenario      ?? ''
+  const subject  = strategy?.direcao_criativa?.tipo_pessoa  ?? ''
+  const aesthetic= strategy?.direcao_criativa?.estilo       ?? ''
+  const bg       = strategy?.imagem_layout?.fundo           ?? strategy?.imagem_estilo?.fundo ?? ''
+  const estiloV  = strategy?.imagem_estilo?.estilo          ?? ''
+  const palette  = strategy?.imagem_referencia?.cores_hex?.join(', ') ?? strategy?.imagem_estilo?.contraste ?? ''
+  const emotion  = strategy?.hooks?.[0]?.tipo ?? ''  // e.g. "Fear of Loss" → dramatic mood
 
-  const base = `product: "${productName}", niche: ${niche}`
+  // Mood/emotion mapping
+  const moodMap: Record<string, string> = {
+    'fear_of_loss': 'dramatic, high-contrast, tense atmosphere',
+    'curiosity':    'intriguing, mysterious, soft cinematic light',
+    'urgency':      'bold, energetic, action-oriented composition',
+    'social_proof': 'warm, aspirational, lifestyle photography',
+    'authority':    'clean, professional, corporate elegance',
+  }
+  const mood = Object.entries(moodMap).find(([k]) => emotion.toLowerCase().includes(k))?.[1]
+    ?? 'dramatic professional advertising mood'
 
+  const nicheHint = niche ? `related to the ${niche} industry` : ''
+
+  // ── Shared visual description ──────────────────────────────────────────────
+  const visual = [
+    subject    && `Main subject: ${subject}`,
+    scenery    && `Environment: ${scenery}`,
+    estiloV    && `Visual style: ${estiloV}`,
+    bg         && `Background: ${bg}`,
+    palette    && `Color palette: ${palette}`,
+    `Mood: ${mood}`,
+  ].filter(Boolean).join('. ')
+
+  // ── Type-specific prompts ──────────────────────────────────────────────────
   if (type === 'carrossel') {
     const slides: unknown[] = strategy?.imagem_variacoes ?? []
     const slide = slides[slideIdx ?? 0] as Record<string, string> | undefined
-    const slideDesc = slide?.descricao ?? slide?.titulo ?? slide?.headline ?? idea
-    return `Professional advertising slide image for ${base}. Concept: ${slideDesc}. ${layout} ${style} ${dir} Clean commercial photography. Ultra-sharp, vibrant colors. No visible text or watermarks.`
+    // Use visual mood/emotion from slide, not copy text
+    const slideEmotion = slide?.emocao ?? slide?.angulo ?? mood
+    return [
+      `Square 1:1 advertising background image ${nicheHint}.`,
+      `Mood for this slide: ${slideEmotion}.`,
+      visual,
+      'Plenty of empty negative space in the upper third for headline overlay.',
+      'Professional commercial photography, ultra-sharp focus, vibrant colors.',
+      NO_TEXT,
+    ].join(' ')
   }
 
   if (type === 'story') {
-    return `Vertical social media story ad (9:16) for ${base}. Concept: ${idea}. ${style} ${dir} Eye-catching, scroll-stopping creative. Dramatic lighting, professional quality. No text overlays.`
+    return [
+      `Vertical 9:16 portrait social media story background ${nicheHint}.`,
+      visual,
+      'Strong visual composition with open areas at top and bottom for text overlay.',
+      'Eye-catching, scroll-stopping imagery. Dramatic studio or golden-hour lighting.',
+      NO_TEXT,
+    ].join(' ')
   }
 
   if (type === 'video_curto' || type === 'video_longo' || type === 'ugc') {
     const hookScene = (strategy?.cenas ?? [])[0] as Record<string, string> | undefined
-    const hookDesc  = hookScene?.descricao ?? hookScene?.visual ?? hookScene?.texto_falado ?? idea
-    return `Video ad thumbnail / key frame for ${base}. Opening hook scene: ${hookDesc}. ${dir} ${style} Cinematic quality, dramatic composition. No text.`
+    const sceneDesc = hookScene?.enquadramento ?? hookScene?.descricao ?? scenery
+    return [
+      `Landscape 16:9 cinematic video thumbnail background ${nicheHint}.`,
+      `Opening scene: ${sceneDesc || 'dynamic action shot'}.`,
+      visual,
+      'Cinematic composition, dramatic lighting, shallow depth-of-field.',
+      'Clean area on the left side for title overlay.',
+      NO_TEXT,
+    ].join(' ')
   }
 
-  // Default: single image ad (imagem)
-  return `Professional advertising image for ${base}. Creative concept: ${idea}. ${layout} ${style} ${dir} High-quality commercial photography, strong visual hierarchy. No text overlays. No watermarks.`
+  // Default: square feed image (imagem)
+  return [
+    `Square 1:1 professional advertising background image ${nicheHint}.`,
+    visual,
+    'Clean composition with generous negative space at the top for headline.',
+    'High-end commercial photography aesthetic. Perfect lighting, sharp focus.',
+    NO_TEXT,
+  ].join(' ')
 }
 
 function readBody(req: IncomingMessage): Promise<string> {
