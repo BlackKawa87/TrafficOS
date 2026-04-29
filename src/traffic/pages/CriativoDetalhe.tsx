@@ -128,8 +128,10 @@ export default function CriativoDetalhe() {
         }),
       })
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Erro desconhecido' })) as { error?: string }
-        throw new Error(err.error ?? `HTTP ${res.status}`)
+        const body = await res.text().catch(() => '')
+        let errMsg = `HTTP ${res.status}`
+        try { errMsg = (JSON.parse(body) as { error?: string }).error ?? errMsg } catch { errMsg = body.slice(0, 300) || errMsg }
+        throw new Error(errMsg)
       }
       const data = await res.json() as { assets: Array<{ url: string; label: string; revised_prompt?: string }> }
       const assets: GeneratedAsset[] = data.assets.map(a => ({
@@ -1253,8 +1255,12 @@ export default function CriativoDetalhe() {
 
                 {/* Error */}
                 {genError && (
-                  <div className="p-4 bg-red-900/20 border border-red-700/30 rounded-xl text-center">
-                    <p className="text-red-300 text-sm mb-3">{genError}</p>
+                  <div className="p-4 bg-red-900/20 border border-red-700/30 rounded-xl">
+                    <p className="text-xs font-semibold text-red-400 mb-1 uppercase tracking-wide">Erro ao gerar imagem</p>
+                    <p className="text-red-300 text-sm mb-3 font-mono break-all">{genError}</p>
+                    <p className="text-gray-500 text-xs mb-3">
+                      Se o erro mencionar "API key" ou "401", verifique se <code className="bg-gray-800 px-1 rounded">OPENAI_API_KEY</code> está configurada no Vercel (Environment Variables → Preview + Production).
+                    </p>
                     <button onClick={generateAssets} className="text-xs text-red-400 hover:text-red-300 underline">
                       Tentar novamente
                     </button>
