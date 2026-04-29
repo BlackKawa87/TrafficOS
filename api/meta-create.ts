@@ -1,11 +1,9 @@
 export const runtime = 'edge'
 
-
 export const maxDuration = 30
 
 const GRAPH = 'https://graph.facebook.com/v19.0'
 
-// Maps TrafficOS campaign objectives to Meta Ads objectives
 const OBJECTIVE_MAP: Record<string, string> = {
   teste_criativo: 'OUTCOME_ENGAGEMENT',
   validacao_oferta: 'OUTCOME_SALES',
@@ -36,22 +34,22 @@ interface CreateAdSetBody {
   billing_event?: string
 }
 
-
 const json = (data: unknown, status = 200): Response =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  const { action } = req.query as { action?: string }
+  const url = new URL(req.url)
+  const action = url.searchParams.get('action')
 
   if (action === 'adset') {
-    return createAdSet(req, res)
+    return createAdSet(req)
   }
-  return createCampaign(req, res)
+  return createCampaign(req)
 }
 
-async function createCampaign(req: VercelRequest, res: VercelResponse) {
+async function createCampaign(req: Request): Promise<Response> {
   const { access_token, ad_account_id, name, objective, daily_budget_cents, status = 'PAUSED' } =
     (await req.json()) as CreateCampaignBody
 
@@ -91,7 +89,7 @@ async function createCampaign(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function createAdSet(req: VercelRequest, res: VercelResponse) {
+async function createAdSet(req: Request): Promise<Response> {
   const { access_token, ad_account_id, campaign_id, name, daily_budget_cents,
     optimization_goal = 'LINK_CLICKS', billing_event = 'IMPRESSIONS' } =
     (await req.json()) as CreateAdSetBody

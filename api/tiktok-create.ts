@@ -1,6 +1,5 @@
 export const runtime = 'edge'
 
-
 export const maxDuration = 30
 
 const TT = 'https://business-api.tiktok.com/open_api/v1.3'
@@ -41,22 +40,22 @@ interface TikTokApiResponse {
   data?: { campaign_id?: string; adgroup_id?: string }
 }
 
-
 const json = (data: unknown, status = 200): Response =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  const { action } = req.query as { action?: string }
+  const url = new URL(req.url)
+  const action = url.searchParams.get('action')
 
   if (action === 'adgroup') {
-    return createAdGroup(req, res)
+    return createAdGroup(req)
   }
-  return createCampaign(req, res)
+  return createCampaign(req)
 }
 
-async function createCampaign(req: VercelRequest, res: VercelResponse) {
+async function createCampaign(req: Request): Promise<Response> {
   const { access_token, advertiser_id, name, objective, budget, budget_mode = 'BUDGET_MODE_DAY' } =
     (await req.json()) as CreateCampaignBody
 
@@ -92,7 +91,7 @@ async function createCampaign(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function createAdGroup(req: VercelRequest, res: VercelResponse) {
+async function createAdGroup(req: Request): Promise<Response> {
   const { access_token, advertiser_id, campaign_id, name, budget,
     budget_mode = 'BUDGET_MODE_DAY', placement_type = 'PLACEMENT_TYPE_AUTOMATIC' } =
     (await req.json()) as CreateAdGroupBody
