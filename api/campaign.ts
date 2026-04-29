@@ -129,11 +129,41 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { campaignData } = (await req.json()) as { campaignData: string }
+  const { campaignData, language, currency, phase } = (await req.json()) as {
+    campaignData: string
+    language?: string
+    currency?: string
+    phase?: string
+  }
 
   if (!campaignData) {
     return json({ error: 'Campaign data is required' }, 400)
   }
+
+  const lang = language ?? 'pt-BR'
+  const curr = currency ?? 'BRL'
+
+  const LANG_INSTRUCTION_MAP: Record<string, string> = {
+    'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Copies, textos e recomendações devem estar em PT-BR.',
+    'en-US': 'Respond ENTIRELY in English (US). All copies, texts and recommendations must be in English.',
+    'es':    'Responde COMPLETAMENTE en Español. Todos los copies, textos y recomendaciones deben estar en Español.',
+    'fr':    'Répondez ENTIÈREMENT en Français. Tous les copies, textes et recommandations doivent être en Français.',
+    'de':    'Antworte KOMPLETT auf Deutsch. Alle Copies, Texte und Empfehlungen müssen auf Deutsch sein.',
+    'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i copies, testi e raccomandazioni devono essere in Italiano.',
+  }
+  const langInstruction = LANG_INSTRUCTION_MAP[lang] ?? LANG_INSTRUCTION_MAP['pt-BR']
+
+  const isTestPhase = phase === 'teste_criativo' || phase === 'teste_inicial' || phase === 'pre_validacao'
+  const minBudgetInstruction = isTestPhase ? `
+FASE DE TESTE — ORÇAMENTO MÍNIMO VIÁVEL:
+- Esta campanha está em fase de TESTE DE CRIATIVO / VALIDAÇÃO INICIAL. Priorize eficiência máxima com o menor orçamento possível.
+- Para Meta Ads: orçamento mínimo de ${curr === 'BRL' ? 'R$20-30/dia' : curr === 'USD' ? '$5-10/day' : curr === 'EUR' ? '€5-10/day' : '£5-8/day'} por conjunto de anúncios é suficiente para coletar dados.
+- Para TikTok Ads: mínimo de ${curr === 'BRL' ? 'R$50/dia' : curr === 'USD' ? '$20/day' : curr === 'EUR' ? '€18/day' : '£16/day'} (limite mínimo da plataforma).
+- Para Google/YouTube: ${curr === 'BRL' ? 'R$20-40/dia' : curr === 'USD' ? '$5-15/day' : curr === 'EUR' ? '€5-12/day' : '£5-10/day'} suficiente para começar.
+- Na estrutura, recomende 1 campanha com 1-2 conjuntos e máximo 3-4 criativos por conjunto.
+- Na estratégia de orçamento, priorize o mínimo necessário para coleta de dados estatísticos, NÃO para escala.
+- O objetivo desta fase é APRENDER, não vender em volume.
+` : ''
 
   try {
     const response = await client.chat.completions.create({
@@ -147,6 +177,9 @@ export default async function handler(req: Request): Promise<Response> {
 
 ${campaignData}
 
+IDIOMA DE RESPOSTA: ${langInstruction}
+MOEDA PADRÃO: Use ${curr} em TODOS os valores monetários (CPC, CPA, orçamentos, etc). Formate como ${curr === 'BRL' ? 'R$' : curr === 'USD' ? 'US$' : curr === 'EUR' ? '€' : '£'}.
+${minBudgetInstruction}
 IMPORTANTE: seja completamente específico para este produto, canal e objetivo. Use os dados reais fornecidos. Gere copies reais e prontos para uso.
 Retorne APENAS o JSON válido conforme o schema.`,
         },

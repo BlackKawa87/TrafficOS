@@ -546,6 +546,11 @@ export default function DiagnosticoOferta() {
   const [savedDiagnosis, setSavedDiagnosis] = useState<AIOfferDiagnosis | null>(null)
   const [saved, setSaved] = useState(false)
   const [history, setHistory] = useState<AIOfferDiagnosis[]>([])
+  const [diagLang, setDiagLang] = useState<string>(() => {
+    // default: product language if set, else UI language, else pt-BR
+    return localStorage.getItem('tos_diag_lang') ?? localStorage.getItem('tos_lang') ?? 'pt-BR'
+  })
+  const defaultCurrency = localStorage.getItem('tos_default_currency') ?? 'BRL'
 
   const loadHistory = useCallback(() => {
     if (!produtoId) return
@@ -596,11 +601,12 @@ export default function DiagnosticoOferta() {
     }, 350)
 
     try {
+      localStorage.setItem('tos_diag_lang', diagLang)
       const productData = formatProductData(product)
       const res = await fetch('/api/diagnose', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productData }),
+        body: JSON.stringify({ productData, language: diagLang, currency: product.currency || defaultCurrency }),
       })
 
       clearInterval(progressInterval)
@@ -714,6 +720,19 @@ export default function DiagnosticoOferta() {
             >
               📄 Exportar .txt
             </button>
+            <select
+              value={diagLang}
+              onChange={e => setDiagLang(e.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 text-sm text-gray-300 focus:outline-none focus:border-violet-500"
+              title="Idioma do diagnóstico"
+            >
+              <option value="pt-BR">🇧🇷 PT</option>
+              <option value="en-US">🇺🇸 EN</option>
+              <option value="es">🇪🇸 ES</option>
+              <option value="fr">🇫🇷 FR</option>
+              <option value="de">🇩🇪 DE</option>
+              <option value="it">🇮🇹 IT</option>
+            </select>
             <button
               onClick={generate}
               disabled={loading}
@@ -770,14 +789,45 @@ export default function DiagnosticoOferta() {
             A IA irá analisar todos os dados do produto e gerar um diagnóstico estratégico completo
             com 14 seções, incluindo avatar, ângulos, canais, riscos e plano de validação.
           </p>
-          <button
-            onClick={generate}
-            className="bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3.5 px-8 rounded-xl text-sm transition-colors shadow-lg shadow-violet-900/30"
-          >
-            ⚡ Gerar Diagnóstico com IA
-          </button>
+
+          {/* Language selector */}
+          <div className="mb-6 inline-flex flex-col items-center gap-2">
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Idioma do diagnóstico</span>
+            <div className="flex flex-wrap justify-center gap-2">
+              {([
+                { code: 'pt-BR', flag: '🇧🇷', label: 'Português' },
+                { code: 'en-US', flag: '🇺🇸', label: 'English' },
+                { code: 'es',    flag: '🇪🇸', label: 'Español' },
+                { code: 'fr',    flag: '🇫🇷', label: 'Français' },
+                { code: 'de',    flag: '🇩🇪', label: 'Deutsch' },
+                { code: 'it',    flag: '🇮🇹', label: 'Italiano' },
+              ] as { code: string; flag: string; label: string }[]).map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => setDiagLang(l.code)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                    diagLang === l.code
+                      ? 'bg-violet-600/20 border-violet-500 text-violet-300'
+                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                  }`}
+                >
+                  <span>{l.flag}</span>
+                  <span>{l.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <button
+              onClick={generate}
+              className="bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3.5 px-8 rounded-xl text-sm transition-colors shadow-lg shadow-violet-900/30"
+            >
+              ⚡ Gerar Diagnóstico com IA
+            </button>
+          </div>
           {history.length === 0 && (
-            <p className="text-xs text-gray-600 mt-4">Requer a API configurada no ambiente Vercel (CLAUDE_API_KEY)</p>
+            <p className="text-xs text-gray-600 mt-4">Requer a API configurada no ambiente Vercel (OPENAI_API_KEY)</p>
           )}
         </div>
       )}

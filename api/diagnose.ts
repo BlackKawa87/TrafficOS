@@ -129,11 +129,28 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ error: 'Method not allowed' }, 405)
   }
 
-  const { productData } = (await req.json()) as { productData: string }
+  const { productData, language, currency } = (await req.json()) as {
+    productData: string
+    language?: string
+    currency?: string
+  }
 
   if (!productData) {
     return json({ error: 'Product data is required' }, 400)
   }
+
+  const lang = language ?? 'pt-BR'
+  const curr = currency ?? 'BRL'
+
+  const LANG_INSTRUCTION_MAP: Record<string, string> = {
+    'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, copies, análises e recomendações devem estar em PT-BR.',
+    'en-US': 'Respond ENTIRELY in English (US). All texts, copies, analyses and recommendations must be in English.',
+    'es':    'Responde COMPLETAMENTE en Español. Todos los textos, copies, análisis y recomendaciones deben estar en Español.',
+    'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, copies, analyses et recommandations doivent être en Français.',
+    'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Kopien, Analysen und Empfehlungen müssen auf Deutsch sein.',
+    'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, le copie, le analisi e le raccomandazioni devono essere in Italiano.',
+  }
+  const langInstruction = LANG_INSTRUCTION_MAP[lang] ?? LANG_INSTRUCTION_MAP['pt-BR']
 
   try {
     const response = await client.chat.completions.create({
@@ -146,6 +163,9 @@ export default async function handler(req: Request): Promise<Response> {
           content: `Analise este produto e gere o diagnóstico estratégico completo com todas as 14 seções:
 
 ${productData}
+
+IDIOMA DE RESPOSTA: ${langInstruction}
+MOEDA PADRÃO: Use ${curr} como moeda padrão em todos os valores monetários (orçamentos, CPAs, CPCs, etc).
 
 Lembre-se: seja ESPECÍFICO para este produto. Use os dados reais fornecidos em cada seção. Não seja genérico.
 Retorne APENAS o JSON válido conforme o schema.`,

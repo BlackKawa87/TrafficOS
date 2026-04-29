@@ -290,11 +290,13 @@ function LancamentoSummary({ stages }: { stages: PipelineStage[] }) {
 }
 
 // ─── API callers ──────────────────────────────────────────────────────────────
-async function runDiagnostico(product: { name: string; niche: string; main_promise: string; main_pain: string; main_desire: string; unique_mechanism: string; target_audience: string; price: number; currency: string; sales_page_url: string }) {
+async function runDiagnostico(product: { name: string; niche: string; main_promise: string; main_pain: string; main_desire: string; unique_mechanism: string; target_audience: string; price: number; currency: string; language?: string; sales_page_url: string }) {
+  const currency = product.currency || localStorage.getItem('tos_default_currency') || 'BRL'
+  const language = product.language || localStorage.getItem('tos_lang') || 'pt-BR'
   const res = await fetch('/api/diagnose', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ productData: JSON.stringify(product) }),
+    body: JSON.stringify({ productData: JSON.stringify(product), language, currency }),
   })
   if (!res.ok) throw new Error(`Diagnóstico falhou: ${res.status}`)
   return res.json()
@@ -302,11 +304,16 @@ async function runDiagnostico(product: { name: string; niche: string; main_promi
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function runCampanha(product: Record<string, unknown>, diagResult: any) {
-  const campaignData = `PRODUTO:\n${JSON.stringify(product, null, 2)}\n\nDIAGNÓSTICO:\n${JSON.stringify(diagResult, null, 2)}\n\nConfiguração:\nCanal: Meta Ads\nObjetivo: vendas_conversao\nFase: validacao\nOrçamento diário: ${product.currency} ${product.price ? Math.round(Number(product.price) * 0.1) : 50}`
+  const currency = String(product.currency || localStorage.getItem('tos_default_currency') || 'BRL')
+  const language = String(product.language || localStorage.getItem('tos_lang') || 'pt-BR')
+  const phase = 'teste_criativo'
+  const currSymbol = currency === 'BRL' ? 'R$' : currency === 'USD' ? 'US$' : currency === 'EUR' ? '€' : '£'
+  const minBudget = currency === 'BRL' ? 30 : currency === 'USD' ? 10 : currency === 'EUR' ? 10 : 8
+  const campaignData = `PRODUTO:\n${JSON.stringify(product, null, 2)}\n\nDIAGNÓSTICO:\n${JSON.stringify(diagResult, null, 2)}\n\nConfiguração:\nCanal: Meta Ads\nObjetivo: teste_criativo\nFase: ${phase}\nOrçamento diário: ${currSymbol}${minBudget} (mínimo para fase de teste)\nMoeda: ${currency}`
   const res = await fetch('/api/campaign', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ campaignData }),
+    body: JSON.stringify({ campaignData, language, currency, phase }),
   })
   if (!res.ok) throw new Error(`Campanha falhou: ${res.status}`)
   const data = await res.json() as { strategy?: unknown; error?: string }

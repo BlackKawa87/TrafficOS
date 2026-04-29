@@ -151,8 +151,11 @@ export default function NovaCampanha() {
   const [searchParams] = useSearchParams()
   const preProduct = searchParams.get('produto') ?? ''
 
+  const defaultCurrency = localStorage.getItem('tos_default_currency') ?? 'BRL'
+  const uiLang = localStorage.getItem('tos_lang') ?? 'pt-BR'
+
   const [step, setStep] = useState(1)
-  const [form, setForm] = useState<WizardState>({ ...EMPTY, product_id: preProduct })
+  const [form, setForm] = useState<WizardState>({ ...EMPTY, product_id: preProduct, currency: defaultCurrency })
 
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -245,7 +248,12 @@ export default function NovaCampanha() {
       const resp = await fetch('/api/campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaignData: buildCampaignPrompt() }),
+        body: JSON.stringify({
+          campaignData: buildCampaignPrompt(),
+          language: uiLang,
+          currency: form.currency,
+          phase: form.phase,
+        }),
       })
 
       if (!resp.ok) {
@@ -448,9 +456,55 @@ export default function NovaCampanha() {
               </div>
             </div>
 
+            {/* Minimum budget presets */}
+            {(() => {
+              const isTestPhase = (form.phase as string) === 'teste_criativo' || (form.phase as string) === 'teste_inicial' || (form.phase as string) === 'pre_validacao'
+              const presets: Record<string, { min: number; rec: number; agg: number }> = {
+                BRL: { min: 30, rec: 60, agg: 150 },
+                USD: { min: 10, rec: 20, agg: 50 },
+                EUR: { min: 10, rec: 18, agg: 45 },
+                GBP: { min: 8,  rec: 15, agg: 40 },
+              }
+              const p = presets[form.currency] ?? presets['BRL']
+              return (
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-2">
+                    {isTestPhase ? '🧪 Presets para Fase de Teste (orçamento diário)' : '⚡ Presets de orçamento diário'}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Mínimo', value: p.min, color: 'border-amber-700/50 bg-amber-900/10 text-amber-300', desc: isTestPhase ? 'Coleta lenta de dados' : 'Conservador' },
+                      { label: 'Recomendado', value: p.rec, color: 'border-violet-500/50 bg-violet-900/10 text-violet-300', desc: isTestPhase ? 'Ideal p/ testar criativos' : 'Equilibrado' },
+                      { label: 'Agressivo', value: p.agg, color: 'border-emerald-700/50 bg-emerald-900/10 text-emerald-300', desc: isTestPhase ? 'Dados rápidos' : 'Mais volume' },
+                    ].map(preset => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => set('daily_budget', preset.value)}
+                        className={`border rounded-lg p-2.5 text-center transition-all hover:opacity-90 ${
+                          form.daily_budget === preset.value
+                            ? preset.color + ' ring-1 ring-inset ring-current'
+                            : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                        }`}
+                      >
+                        <div className="text-sm font-bold">{form.currency === 'BRL' ? 'R$' : form.currency === 'USD' ? 'US$' : form.currency === 'EUR' ? '€' : '£'}{preset.value}/dia</div>
+                        <div className="text-[10px] font-medium mt-0.5">{preset.label}</div>
+                        <div className="text-[10px] opacity-70 mt-0.5">{preset.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {isTestPhase && (
+                    <p className="text-[11px] text-amber-400/70 mt-2">
+                      💡 Fase de teste — foco em aprender, não em volume. Orçamento mínimo é suficiente para coletar dados estatísticos.
+                    </p>
+                  )}
+                </div>
+              )
+            })()}
+
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                Orçamento Diário ({form.currency})
+                Orçamento Diário ({form.currency}) — ou insira manualmente
               </label>
               <input
                 type="number"
