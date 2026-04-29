@@ -656,6 +656,8 @@ export interface AICreative {
   // history of status/metric changes
   history: CreativeHistoryEntry[]
   notes: string
+  // generated visual assets (DALL-E 3 URLs — expire after 1h from OpenAI)
+  generated_assets?: Array<{ url: string; label: string; generated_at: string }>
   created_at: string
   updated_at: string
 }

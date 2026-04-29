@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { tosDb, generateId, now } from '../store/storage'
 import {
@@ -92,6 +92,61 @@ export default function CriativoDetalhe() {
   const [editingLearning, setEditingLearning] = useState(false)
   const [learningForm, setLearningForm] = useState({ hook_type: '', promise_type: '', dominant_emotion: '', proof_type: '' })
   const [suggestedStatus, setSuggestedStatus] = useState<AICreativeStatus | null>(null)
+
+  // ─── Asset Generation ────────────────────────────────────────────────────────
+  type GeneratedAsset = { url: string; label: string; generated_at: string }
+  const [genAssets, setGenAssets] = useState<GeneratedAsset[]>([])
+  const [genLoading, setGenLoading] = useState(false)
+  const [genError, setGenError] = useState<string | null>(null)
+  const [genDone, setGenDone] = useState(false)
+  // Restore persisted assets on mount
+  const savedAssets = creative?.generated_assets ?? []
+
+  const generateAssets = useCallback(async () => {
+    if (!creative) return
+    const product = tosDb.products.getById(creative.product_id)
+    setGenLoading(true)
+    setGenError(null)
+    setGenDone(false)
+
+    const isCarousel = creative.creative_type === 'carrossel'
+    const slideCount = isCarousel
+      ? Math.min((creative.strategy?.imagem_variacoes ?? []).length || 3, 5)
+      : 1
+
+    try {
+      const res = await fetch('/api/creative-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creative_type: creative.creative_type,
+          product_name:  product?.name ?? 'Produto',
+          niche:         product?.niche ?? '',
+          strategy:      creative.strategy,
+          slide_count:   slideCount,
+          language:      localStorage.getItem('tos_ai_lang') ?? 'pt-BR',
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erro desconhecido' })) as { error?: string }
+        throw new Error(err.error ?? `HTTP ${res.status}`)
+      }
+      const data = await res.json() as { assets: Array<{ url: string; label: string; revised_prompt?: string }> }
+      const assets: GeneratedAsset[] = data.assets.map(a => ({
+        url:          a.url,
+        label:        a.label,
+        generated_at: now(),
+      }))
+      setGenAssets(assets)
+      setGenDone(true)
+      // Persist to creative record
+      update({ generated_assets: assets })
+    } catch (e) {
+      setGenError(e instanceof Error ? e.message : 'Erro ao gerar imagem')
+    } finally {
+      setGenLoading(false)
+    }
+  }, [creative]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!creative) {
     return (
@@ -1076,6 +1131,165 @@ export default function CriativoDetalhe() {
             ))}
           </div>
         </SectionCard>
+
+        {/* ─── Asset Generation ─────────────────────────────────────────── */}
+        {(() => {
+          const isVideo    = ['video_curto', 'video_longo', 'ugc'].includes(creative.creative_type)
+          const isCarousel = creative.creative_type === 'carrossel'
+          const isStory    = creative.creative_type === 'story'
+
+          const typeLabel = isVideo    ? '🎬 Vídeo'
+                          : isCarousel ? '🎴 Carrossel'
+                          : isStory    ? '📱 Story'
+                          : '🖼️ Imagem'
+          const btnLabel  = isVideo    ? 'Gerar Frame-Chave com DALL-E 3'
+                          : isCarousel ? `Gerar ${Math.min((creative.strategy?.imagem_variacoes ?? []).length || 3, 5)} Slides com DALL-E 3`
+                          : 'Gerar Imagem com DALL-E 3'
+
+          const displayAssets = genDone ? genAssets : savedAssets
+
+          return (
+            <div className="bg-gray-900 border border-violet-800/40 rounded-xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 bg-violet-950/20">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-violet-300">✨ Geração de Asset Visual</span>
+                  <span className="text-xs bg-violet-900/50 text-violet-300 border border-violet-700/50 px-2 py-0.5 rounded-full">{typeLabel}</span>
+                </div>
+                {displayAssets.length > 0 && (
+                  <button
+                    onClick={generateAssets}
+                    disabled={genLoading}
+                    className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-700 transition-colors disabled:opacity-40"
+                  >
+                    🔄 Regenerar
+                  </button>
+                )}
+              </div>
+
+              <div className="p-5">
+                {/* Info for videos */}
+                {isVideo && displayAssets.length === 0 && (
+                  <div className="mb-4 p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg">
+                    <p className="text-xs text-amber-300 leading-relaxed">
+                      <strong>Para vídeos</strong> — geramos o <strong>frame-chave</strong> (cena de abertura/hook) com DALL-E 3, que você usa como referência visual ou thumbnail.
+                      Para o vídeo completo, use o storyboard acima com ferramentas como <strong>Runway, Pika ou CapCut AI</strong>.
+                    </p>
+                  </div>
+                )}
+
+                {/* Generate button */}
+                {displayAssets.length === 0 && !genLoading && (
+                  <button
+                    onClick={generateAssets}
+                    className="w-full py-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-violet-900/30 flex items-center justify-center gap-2"
+                  >
+                    <span>🎨</span>
+                    <span>{btnLabel}</span>
+                  </button>
+                )}
+
+                {/* Loading */}
+                {genLoading && (
+                  <div className="flex flex-col items-center justify-center py-12 gap-4">
+                    <div className="w-12 h-12 rounded-full border-4 border-violet-600/30 border-t-violet-500 animate-spin" />
+                    <p className="text-gray-400 text-sm">
+                      {isCarousel ? 'Gerando slides com DALL-E 3...' : 'Gerando imagem com DALL-E 3...'}
+                    </p>
+                    <p className="text-gray-600 text-xs">Pode levar 10–30 segundos</p>
+                  </div>
+                )}
+
+                {/* Error */}
+                {genError && (
+                  <div className="p-4 bg-red-900/20 border border-red-700/30 rounded-xl text-center">
+                    <p className="text-red-300 text-sm mb-3">{genError}</p>
+                    <button onClick={generateAssets} className="text-xs text-red-400 hover:text-red-300 underline">
+                      Tentar novamente
+                    </button>
+                  </div>
+                )}
+
+                {/* Generated assets */}
+                {displayAssets.length > 0 && (
+                  <div className="space-y-4">
+                    <div className={`grid gap-4 ${displayAssets.length > 1 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1'}`}>
+                      {displayAssets.map((asset, i) => (
+                        <div key={i} className="space-y-2">
+                          <div className="text-xs text-gray-400 font-medium">{asset.label}</div>
+                          <div className="relative group">
+                            <img
+                              src={asset.url}
+                              alt={asset.label}
+                              className="w-full rounded-xl border border-gray-700 object-cover"
+                              style={{ aspectRatio: isStory ? '9/16' : isVideo ? '16/9' : '1/1', maxHeight: isStory ? '480px' : '320px' }}
+                            />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-3">
+                              <a
+                                href={asset.url}
+                                download={`${creative.strategy?.nome ?? 'criativo'}-${asset.label.toLowerCase().replace(/\s+/g, '-')}.png`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-white text-black text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                              >
+                                ↓ Download
+                              </a>
+                              <a
+                                href={asset.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-gray-800 text-white text-xs font-medium px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                              >
+                                ↗ Abrir
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Warning about URL expiry */}
+                    <div className="flex items-start gap-2 p-3 bg-amber-900/15 border border-amber-700/20 rounded-lg">
+                      <span className="text-amber-400 flex-shrink-0">⚠️</span>
+                      <p className="text-xs text-amber-300/80">
+                        URLs de imagem expiram em ~1 hora (limite OpenAI). Faça o download agora.
+                        {isVideo && ' Para gerar o vídeo completo, use o prompt do frame-chave no Runway, Pika ou CapCut AI.'}
+                      </p>
+                    </div>
+
+                    {/* Video tools CTA */}
+                    {isVideo && (
+                      <div className="p-4 bg-gray-800 rounded-xl border border-gray-700">
+                        <div className="text-xs font-semibold text-gray-300 mb-2">🎬 Gerar o vídeo completo:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { name: 'Runway Gen-3', url: 'https://runwayml.com' },
+                            { name: 'Pika Labs',    url: 'https://pika.art' },
+                            { name: 'Kling AI',     url: 'https://klingai.com' },
+                            { name: 'CapCut AI',    url: 'https://capcut.com' },
+                          ].map(tool => (
+                            <a
+                              key={tool.name}
+                              href={tool.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                            >
+                              {tool.name} ↗
+                            </a>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Use o frame gerado como imagem de referência e o storyboard acima como roteiro.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* 12. Aprendizados */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
