@@ -1,15 +1,15 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import type { IncomingMessage, ServerResponse } from 'http'
 
-// Serverless Function — 60s for 5 Claude calls + 5 parallel Ideogram calls
+// Serverless Function — 60s for 5 GPT-4o calls + 5 parallel Ideogram calls
 export const maxDuration = 60
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
 // Lazy singleton — avoids module-init crash when env vars aren't loaded yet
-let _anthropic: Anthropic | null = null
-function getAnthropic(): Anthropic {
-  if (!_anthropic) _anthropic = new Anthropic()
-  return _anthropic
+let _openai: OpenAI | null = null
+function getOpenAI(): OpenAI {
+  if (!_openai) _openai = new OpenAI()
+  return _openai
 }
 
 const IDEOGRAM_KEY = process.env.IDEOGRAM_API_KEY ?? ''
@@ -32,16 +32,17 @@ function fill(template: string, vars: Record<string, string>): string {
   })
 }
 
-// ─── Claude call ──────────────────────────────────────────────────────────────
-async function claude(prompt: string, systemMsg?: string): Promise<string> {
-  const response = await getAnthropic().messages.create({
-    model:      'claude-sonnet-4-6',
+// ─── OpenAI call ──────────────────────────────────────────────────────────────
+async function gpt(prompt: string, systemMsg?: string): Promise<string> {
+  const response = await getOpenAI().chat.completions.create({
+    model: 'gpt-4o',
     max_tokens: 4096,
-    ...(systemMsg ? { system: systemMsg } : {}),
-    messages: [{ role: 'user', content: prompt }],
+    messages: [
+      ...(systemMsg ? [{ role: 'system' as const, content: systemMsg }] : []),
+      { role: 'user' as const, content: prompt },
+    ],
   })
-  const block = response.content[0]
-  return block.type === 'text' ? block.text.trim() : ''
+  return response.choices[0]?.message?.content?.trim() ?? ''
 }
 
 // ─── Ideogram image generation ────────────────────────────────────────────────
@@ -156,20 +157,20 @@ async function runCreativePipeline(
   const t05 = templates[4]?.template ?? FALLBACK_PROMPT_05
 
   // ── Step 1: Behavioral analysis ────────────────────────────────────────────
-  const analise_comportamental = await claude(
+  const analise_comportamental = await gpt(
     fill(t01, baseVars),
     'Você é especialista em comportamento do consumidor e psicologia de compra. Seja claro, objetivo e estratégico.'
   )
 
   // ── Step 2: Conversion signals ─────────────────────────────────────────────
-  const sinais_conversao = await claude(
+  const sinais_conversao = await gpt(
     fill(t02, { ...baseVars, analise_comportamental }),
     'Você é estrategista de criativos para Facebook Ads. Seja prático e direto ao ponto.'
   )
 
   // ── Step 3: 5 creative angles (request JSON output) ────────────────────────
   const prompt03 = fill(t03, { ...baseVars, analise_comportamental, sinais_conversao })
-  const criativos_texto = await claude(
+  const criativos_texto = await gpt(
     `${prompt03}
 
 ---
@@ -179,7 +180,7 @@ Retorne a resposta em formato estruturado e claro, com os 5 criativos numerados 
 
   // ── Step 4: Ideogram prompts for all 5 creatives ──────────────────────────
   const prompt04 = fill(t04, { ...baseVars, criativos_gerados: criativos_texto })
-  const ideogram_prompts_texto = await claude(
+  const ideogram_prompts_texto = await gpt(
     `${prompt04}
 
 ---
@@ -194,7 +195,7 @@ Sem texto adicional. Apenas o JSON array.`,
 
   // ── Step 5: Strategic revision + final prompts ─────────────────────────────
   const prompt05 = fill(t05, { criativos_gerados: ideogram_prompts_texto })
-  const final_texto = await claude(
+  const final_texto = await gpt(
     `${prompt05}
 
 ---
@@ -232,8 +233,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 async function _handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'POST') { sendJson(res, { error: 'Method not allowed' }, 405); return }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    sendJson(res, { error: 'ANTHROPIC_API_KEY não configurada nas variáveis de ambiente do Vercel' }, 500)
+  if (!process.env.OPENAI_API_KEY) {
+    sendJson(res, { error: 'OPENAI_API_KEY não configurada nas variáveis de ambiente do Vercel' }, 500)
     return
   }
 
