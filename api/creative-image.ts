@@ -5,7 +5,13 @@ import type { IncomingMessage, ServerResponse } from 'http'
 export const maxDuration = 60
 
 // ─── Clients ──────────────────────────────────────────────────────────────────
-const anthropic    = new Anthropic()
+// Lazy singleton — avoids module-init crash when env vars aren't loaded yet
+let _anthropic: Anthropic | null = null
+function getAnthropic(): Anthropic {
+  if (!_anthropic) _anthropic = new Anthropic()
+  return _anthropic
+}
+
 const IDEOGRAM_KEY = process.env.IDEOGRAM_API_KEY ?? ''
 const IDEOGRAM_URL = 'https://api.ideogram.ai/generate'
 
@@ -28,7 +34,7 @@ function fill(template: string, vars: Record<string, string>): string {
 
 // ─── Claude call ──────────────────────────────────────────────────────────────
 async function claude(prompt: string, systemMsg?: string): Promise<string> {
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model:      'claude-sonnet-4-6',
     max_tokens: 4096,
     ...(systemMsg ? { system: systemMsg } : {}),
@@ -212,7 +218,24 @@ Sem texto adicional. Apenas o JSON array.`,
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  // Top-level guard — catches any unhandled crash and returns JSON instead of silently failing
+  try {
+    await _handler(req, res)
+  } catch (err) {
+    console.error('[creative-image] unhandled error:', err)
+    if (!res.headersSent) {
+      sendJson(res, { error: err instanceof Error ? `${err.name}: ${err.message}` : 'Erro interno inesperado' }, 500)
+    }
+  }
+}
+
+async function _handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'POST') { sendJson(res, { error: 'Method not allowed' }, 405); return }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    sendJson(res, { error: 'ANTHROPIC_API_KEY não configurada nas variáveis de ambiente do Vercel' }, 500)
+    return
+  }
 
   if (!IDEOGRAM_KEY) {
     sendJson(res, { error: 'IDEOGRAM_API_KEY não configurada nas variáveis de ambiente do Vercel' }, 500)
