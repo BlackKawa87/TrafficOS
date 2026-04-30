@@ -13,14 +13,14 @@ function getOpenAI(): OpenAI {
 }
 
 const IDEOGRAM_KEY = process.env.IDEOGRAM_API_KEY ?? ''
-const IDEOGRAM_URL = 'https://api.ideogram.ai/generate'
+const IDEOGRAM_URL = 'https://api.ideogram.ai/v1/ideogram-v3/generate'
 
-type IdeogramAspect = 'ASPECT_1_1' | 'ASPECT_9_16' | 'ASPECT_16_9'
+type IdeogramAspect = '1x1' | '9x16' | '16x9'
 
 function getAspect(type: string): IdeogramAspect {
-  if (type === 'story')                                  return 'ASPECT_9_16'
-  if (type === 'video_curto' || type === 'video_longo') return 'ASPECT_16_9'
-  return 'ASPECT_1_1'
+  if (type === 'story')                                  return '9x16'
+  if (type === 'video_curto' || type === 'video_longo') return '16x9'
+  return '1x1'
 }
 
 // ─── Variable substitution ────────────────────────────────────────────────────
@@ -45,20 +45,20 @@ async function gpt(prompt: string, systemMsg?: string): Promise<string> {
   return response.choices[0]?.message?.content?.trim() ?? ''
 }
 
-// ─── Ideogram image generation ────────────────────────────────────────────────
+// ─── Ideogram v3 image generation ────────────────────────────────────────────
+// V3 uses multipart/form-data, a new endpoint, and different aspect ratio strings
 async function generateImage(prompt: string, aspect: IdeogramAspect): Promise<string> {
+  const form = new FormData()
+  form.append('prompt',       prompt)
+  form.append('aspect_ratio', aspect)
+  form.append('magic_prompt', 'OFF')
+  form.append('num_images',   '1')
+  form.append('rendering_speed', 'DEFAULT')
+
   const res = await fetch(IDEOGRAM_URL, {
     method:  'POST',
-    headers: { 'Api-Key': IDEOGRAM_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      image_request: {
-        prompt,
-        model:               'V_3',
-        aspect_ratio:        aspect,
-        magic_prompt_option: 'OFF',
-        num_images:          1,
-      },
-    }),
+    headers: { 'Api-Key': IDEOGRAM_KEY },
+    body:    form,
   })
   if (!res.ok) {
     const txt = await res.text().catch(() => '')
