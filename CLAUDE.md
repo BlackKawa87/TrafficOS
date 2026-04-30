@@ -19,7 +19,8 @@ No test framework is configured. Always run `npm run build` after changes to cat
 - **React Router DOM v7** for client-side routing
 - **Tailwind CSS v4** (via `@tailwindcss/vite` plugin) — imported in `src/index.css`
 - **localStorage** for all data persistence — no external database or auth
-- **Anthropic SDK** (`@anthropic-ai/sdk`) — all AI calls go through `api/*.ts` Vercel Edge Functions
+- **OpenAI SDK** (`openai`) — all AI calls use `gpt-4o` through `api/*.ts` Vercel Edge/Serverless Functions
+- **Ideogram v3** (`api.ideogram.ai/v1/ideogram-v3/generate`) — image generation for creatives
 - **Vercel** for deployment (SPA rewrites + Edge Functions in `vercel.json`)
 
 ## Architecture
@@ -44,7 +45,7 @@ src/traffic/
   types/        index.ts   (all TypeScript interfaces and enums)
   utils/        helpers.ts (formatters, label maps, color helpers)
                 landingHtmlBuilder.ts (landing page HTML generator)
-api/            Vercel Edge Functions (one per AI feature)
+api/            Vercel Edge Functions (one per AI feature) — except creative-image.ts (Serverless)
 ```
 
 ### Route table
@@ -222,15 +223,15 @@ Also: `tosDb.exportAll()` → JSON string, `tosDb.importAll(json)` → restore, 
 
 ## API endpoints (`api/*.ts`)
 
-All API files are **Vercel Edge Functions**. Pattern:
+All API files are **Vercel Edge Functions** — except `creative-image.ts` which is a Serverless Function (needs >25s for its 5-step pipeline). Standard Edge Function pattern:
 
 ```ts
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
 export const config = { runtime: 'edge' }  // ← required for Edge Function (NOT runtime = 'edge')
 export const maxDuration = 60
 
-const client = new Anthropic()  // picks up ANTHROPIC_API_KEY from env
+const client = new OpenAI()  // picks up OPENAI_API_KEY from env
 
 const json = (data: unknown, status = 200): Response =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
@@ -238,12 +239,43 @@ const json = (data: unknown, status = 200): Response =>
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
   const { myField } = (await req.json()) as { myField: string }
-  const message = await client.messages.create({ model: 'claude-sonnet-4-6', ... })
+  const response = await client.chat.completions.create({
+    model: 'gpt-4o',
+    max_tokens: 8000,
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user',   content: myField },
+    ],
+  })
+  const text = response.choices[0]?.message?.content ?? ''
   // parse and return JSON
 }
 ```
 
 **CRITICAL**: Use `export const config = { runtime: 'edge' }` — NOT `export const runtime = 'edge'` (Next.js-only). Without this, Vercel counts each file as a Serverless Function and exceeds the 12-function Hobby plan limit.
+
+### Exception: `api/creative-image.ts` — Serverless Function
+
+This file runs a 5-step GPT-4o pipeline + 5 parallel Ideogram image calls, which exceeds the 25s Edge Function wall-clock limit. It uses **Node.js Serverless Function format** instead:
+
+```ts
+import OpenAI from 'openai'
+import type { IncomingMessage, ServerResponse } from 'http'
+
+// No `export const config` here — intentionally Serverless
+export const maxDuration = 60  // configured in vercel.json too
+
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  // readBody() reads the stream manually (no req.json())
+  // sendJson() writes headers + body manually (no Response constructor)
+}
+```
+
+**Ideogram v3** (`POST https://api.ideogram.ai/v1/ideogram-v3/generate`):
+- Uses `multipart/form-data` body (not JSON)
+- Auth header: `Api-Key: <IDEOGRAM_API_KEY>`
+- Aspect ratios: `1x1`, `9x16`, `16x9` (not the old `ASPECT_*` enum)
+- Field names: `magic_prompt` (not `magic_prompt_option`), no `model` field needed
 
 **For query params** in Edge Functions (no `req.query`):
 ```ts
@@ -284,6 +316,7 @@ const action = url.searchParams.get('action')
 | `tiktok-sync.ts` | `{ access_token, advertiser_id }` | Sync TikTok Ads data |
 | `tiktok-create.ts` | `{ access_token, advertiser_id, name, objective, budget }` + `?action=adgroup` for ad groups | Create TikTok campaign or ad group |
 | `import.ts` | `{ type: 'pdf'\|'image'\|'text', content: string, mimeType? }` | Extract structured data from uploaded documents |
+| `creative-image.ts` ⚠️ | `{ creative_type, product_name, niche?, strategy?, product?, prompt_templates? }` | **Serverless** — 5-step GPT-4o pipeline → 5 Ideogram V3 images; returns `{ assets: [{url, label}] }` |
 
 ---
 
@@ -393,10 +426,11 @@ No icon library — emoji and inline SVG only.
 ## Environment Variables (Vercel)
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...          # Required by all api/*.ts Edge Functions (gpt-4o)
+IDEOGRAM_API_KEY=...           # Required by api/creative-image.ts (image generation)
 ```
 
-Set in Vercel project settings → Environment Variables. Required for all AI endpoints.
+Set in Vercel project settings → Environment Variables → Production + Preview + Development.
 
 ---
 
