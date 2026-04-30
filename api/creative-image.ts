@@ -1,110 +1,148 @@
-import OpenAI from 'openai'
 import type { IncomingMessage, ServerResponse } from 'http'
 
-// Serverless Function (Node.js) — maxDuration respected; Edge would cap at 25s
+// Serverless Function — 60s for Ideogram generation
 export const maxDuration = 60
 
-const client = new OpenAI()
+// ─── Ideogram v3 API ──────────────────────────────────────────────────────────
+const IDEOGRAM_KEY = process.env.IDEOGRAM_API_KEY ?? ''
+const IDEOGRAM_URL = 'https://api.ideogram.ai/generate'
 
-type DalleSize = '1024x1024' | '1024x1792' | '1792x1024'
+type IdeogramAspect = 'ASPECT_1_1' | 'ASPECT_9_16' | 'ASPECT_16_9' | 'ASPECT_4_5'
 
-function getSize(type: string): DalleSize {
-  if (type === 'story')                                          return '1024x1792'
-  if (type === 'video_curto' || type === 'video_longo')         return '1792x1024'
-  return '1024x1024'
+function getAspect(type: string): IdeogramAspect {
+  if (type === 'story')                               return 'ASPECT_9_16'
+  if (type === 'video_curto' || type === 'video_longo') return 'ASPECT_16_9'
+  return 'ASPECT_1_1'  // feed, carrossel, imagem, ugc
 }
 
 // ─── Prompt builder ───────────────────────────────────────────────────────────
-// DALL-E 3 cannot render legible text. All prompts generate a CLEAN VISUAL
-// BACKGROUND that the user finishes in Canva / Meta Creative Hub / Figma.
-// The "NO TEXT" instruction must be emphatic and repeated to override DALL-E's
-// tendency to hallucinate garbled letters when it sees words in the input.
-
-const NO_TEXT = 'CRITICAL RULE: absolutely ZERO text, ZERO letters, ZERO words, ZERO numbers, ZERO captions, ZERO logos anywhere in the image — this is a pure photographic background for text overlay.'
-
+// Ideogram v3 renders TEXT reliably — unlike DALL-E.
+// We include the actual headline / CTA from the creative strategy.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildPrompt(type: string, _productName: string, niche: string, strategy: any, slideIdx?: number): string {
-  // Pull visual descriptors only — never product name / copy (causes DALL-E to render text)
-  const scenery  = strategy?.direcao_criativa?.cenario      ?? ''
-  const subject  = strategy?.direcao_criativa?.tipo_pessoa  ?? ''
-  const aesthetic= strategy?.direcao_criativa?.estilo       ?? ''
-  const bg       = strategy?.imagem_layout?.fundo           ?? strategy?.imagem_estilo?.fundo ?? ''
-  const estiloV  = strategy?.imagem_estilo?.estilo          ?? ''
-  const palette  = strategy?.imagem_referencia?.cores_hex?.join(', ') ?? strategy?.imagem_estilo?.contraste ?? ''
-  const emotion  = strategy?.hooks?.[0]?.tipo ?? ''  // e.g. "Fear of Loss" → dramatic mood
+function buildPrompt(type: string, productName: string, niche: string, strategy: any, slideIdx?: number): string {
+  // ── Text elements from the creative briefing ────────────────────────────
+  const headline    = strategy?.imagem_texto?.headline    ?? strategy?.roteiro?.hook        ?? ''
+  const subheadline = strategy?.imagem_texto?.subheadline ?? strategy?.roteiro?.solucao     ?? ''
+  const cta         = strategy?.imagem_texto?.cta         ?? strategy?.texto_anuncio?.ctas?.[0] ?? 'Saiba mais'
+  const idea        = strategy?.ideia_central             ?? ''
 
-  // Mood/emotion mapping
-  const moodMap: Record<string, string> = {
-    'fear_of_loss': 'dramatic, high-contrast, tense atmosphere',
-    'curiosity':    'intriguing, mysterious, soft cinematic light',
-    'urgency':      'bold, energetic, action-oriented composition',
-    'social_proof': 'warm, aspirational, lifestyle photography',
-    'authority':    'clean, professional, corporate elegance',
-  }
-  const mood = Object.entries(moodMap).find(([k]) => emotion.toLowerCase().includes(k))?.[1]
-    ?? 'dramatic professional advertising mood'
+  // ── Visual style ────────────────────────────────────────────────────────
+  const scenery   = strategy?.direcao_criativa?.cenario     ?? ''
+  const subject   = strategy?.direcao_criativa?.tipo_pessoa ?? ''
+  const estilo    = strategy?.direcao_criativa?.estilo      ?? ''
+  const bg        = strategy?.imagem_estilo?.fundo          ?? ''
+  const palette   = strategy?.imagem_referencia?.cores_hex?.slice(0, 3).join(', ')
+    ?? strategy?.imagem_estilo?.contraste ?? ''
 
-  const nicheHint = niche ? `related to the ${niche} industry` : ''
+  const nicheCtx  = niche ? `(${niche} industry)` : ''
+  const paletteTxt = palette ? `Color palette: ${palette}.` : ''
 
-  // ── Shared visual description ──────────────────────────────────────────────
-  const visual = [
-    subject    && `Main subject: ${subject}`,
-    scenery    && `Environment: ${scenery}`,
-    estiloV    && `Visual style: ${estiloV}`,
-    bg         && `Background: ${bg}`,
-    palette    && `Color palette: ${palette}`,
-    `Mood: ${mood}`,
-  ].filter(Boolean).join('. ')
-
-  // ── Type-specific prompts ──────────────────────────────────────────────────
+  // ── Type-specific prompts ────────────────────────────────────────────────
   if (type === 'carrossel') {
     const slides: unknown[] = strategy?.imagem_variacoes ?? []
     const slide = slides[slideIdx ?? 0] as Record<string, string> | undefined
-    // Use visual mood/emotion from slide, not copy text
-    const slideEmotion = slide?.emocao ?? slide?.angulo ?? mood
+    const slideHeadline = slide?.headline ?? headline
+    const slideAngle    = slide?.angulo   ?? idea
+    const slideEmotion  = slide?.emocao   ?? ''
+
     return [
-      `Square 1:1 advertising background image ${nicheHint}.`,
-      `Mood for this slide: ${slideEmotion}.`,
-      visual,
-      'Plenty of empty negative space in the upper third for headline overlay.',
-      'Professional commercial photography, ultra-sharp focus, vibrant colors.',
-      NO_TEXT,
-    ].join(' ')
+      `Professional square social media ad creative for ${productName} ${nicheCtx}.`,
+      `BOLD HEADLINE TEXT: "${slideHeadline}"`,
+      slideAngle    && `Concept: ${slideAngle}.`,
+      slideEmotion  && `Emotional tone: ${slideEmotion}.`,
+      subject       && `Photography subject: ${subject}.`,
+      scenery       && `Background scene: ${scenery}.`,
+      estilo        && `Visual style: ${estilo}.`,
+      bg            && `Background: ${bg}.`,
+      paletteTxt,
+      `CTA button in the lower section with text "${cta}".`,
+      `Clean modern advertising layout. High-contrast typography. Professional graphic design quality.`,
+      `Meta Ads feed format. No extra decorations. Photorealistic product shot with overlay text.`,
+    ].filter(Boolean).join(' ')
   }
 
   if (type === 'story') {
     return [
-      `Vertical 9:16 portrait social media story background ${nicheHint}.`,
-      visual,
-      'Strong visual composition with open areas at top and bottom for text overlay.',
-      'Eye-catching, scroll-stopping imagery. Dramatic studio or golden-hour lighting.',
-      NO_TEXT,
-    ].join(' ')
+      `Professional vertical 9:16 social media story ad for ${productName} ${nicheCtx}.`,
+      headline      && `LARGE BOLD HEADLINE: "${headline}"`,
+      subheadline   && `Subtitle text: "${subheadline}"`,
+      idea          && `Concept: ${idea}.`,
+      subject       && `Subject: ${subject}.`,
+      scenery       && `Scene: ${scenery}.`,
+      estilo        && `Style: ${estilo}.`,
+      bg            && `Background: ${bg}.`,
+      paletteTxt,
+      `CTA button near the bottom: "${cta}".`,
+      `Full-bleed vertical composition. Bold typographic hierarchy. Eye-catching scroll-stopping creative.`,
+      `Instagram/Facebook Stories format. Clean professional ad design.`,
+    ].filter(Boolean).join(' ')
   }
 
   if (type === 'video_curto' || type === 'video_longo' || type === 'ugc') {
     const hookScene = (strategy?.cenas ?? [])[0] as Record<string, string> | undefined
-    const sceneDesc = hookScene?.enquadramento ?? hookScene?.descricao ?? scenery
+    const hookVisual = hookScene?.enquadramento ?? hookScene?.descricao ?? scenery
+    const hookText  = strategy?.roteiro?.hook ?? idea
+
     return [
-      `Landscape 16:9 cinematic video thumbnail background ${nicheHint}.`,
-      `Opening scene: ${sceneDesc || 'dynamic action shot'}.`,
-      visual,
-      'Cinematic composition, dramatic lighting, shallow depth-of-field.',
-      'Clean area on the left side for title overlay.',
-      NO_TEXT,
-    ].join(' ')
+      `Cinematic video ad thumbnail / key frame for ${productName} ${nicheCtx}.`,
+      hookText   && `Hook text overlay: "${hookText}"`,
+      hookVisual && `Scene: ${hookVisual}.`,
+      subject    && `Subject: ${subject}.`,
+      estilo     && `Aesthetic: ${estilo}.`,
+      paletteTxt,
+      `Dramatic cinematic lighting. Professional production value.`,
+      `16:9 YouTube/Meta video thumbnail format. Bold text placement on the left side.`,
+    ].filter(Boolean).join(' ')
   }
 
   // Default: square feed image (imagem)
   return [
-    `Square 1:1 professional advertising background image ${nicheHint}.`,
-    visual,
-    'Clean composition with generous negative space at the top for headline.',
-    'High-end commercial photography aesthetic. Perfect lighting, sharp focus.',
-    NO_TEXT,
-  ].join(' ')
+    `Professional square Meta Ads creative for ${productName} ${nicheCtx}.`,
+    headline      && `BOLD HEADLINE TEXT: "${headline}"`,
+    subheadline   && `Subtext: "${subheadline}"`,
+    idea          && `Concept: ${idea}.`,
+    subject       && `Photography: ${subject}.`,
+    scenery       && `Setting: ${scenery}.`,
+    estilo        && `Visual style: ${estilo}.`,
+    bg            && `Background: ${bg}.`,
+    paletteTxt,
+    `CTA button: "${cta}".`,
+    `Clean modern advertising layout. High-contrast legible typography. Professional graphic design.`,
+    `1:1 square format for Meta Ads feed. Balanced composition with strong visual hierarchy.`,
+  ].filter(Boolean).join(' ')
 }
 
+// ─── Ideogram generate call ───────────────────────────────────────────────────
+async function generateImage(prompt: string, aspect: IdeogramAspect): Promise<string> {
+  const res = await fetch(IDEOGRAM_URL, {
+    method: 'POST',
+    headers: {
+      'Api-Key':      IDEOGRAM_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      image_request: {
+        prompt,
+        model:                'V_3',
+        aspect_ratio:         aspect,
+        magic_prompt_option:  'OFF',   // keep our prompt as-is
+        num_images:           1,
+      },
+    }),
+  })
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(`Ideogram API error ${res.status}: ${txt.slice(0, 300)}`)
+  }
+
+  const data = await res.json() as { data?: Array<{ url?: string }> }
+  const url  = data?.data?.[0]?.url
+  if (!url) throw new Error('Ideogram returned no image URL')
+  return url
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
@@ -120,9 +158,12 @@ function sendJson(res: ServerResponse, data: unknown, status = 200): void {
   res.end(body)
 }
 
+// ─── Handler ──────────────────────────────────────────────────────────────────
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (req.method !== 'POST') {
-    sendJson(res, { error: 'Method not allowed' }, 405)
+  if (req.method !== 'POST') { sendJson(res, { error: 'Method not allowed' }, 405); return }
+
+  if (!IDEOGRAM_KEY) {
+    sendJson(res, { error: 'IDEOGRAM_API_KEY not configured in Vercel environment variables' }, 500)
     return
   }
 
@@ -134,12 +175,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     const body = await readBody(req)
     const parsed = JSON.parse(body) as {
-      creative_type: string
-      product_name: string
-      niche?: string
+      creative_type: string; product_name: string; niche?: string
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      strategy?: any
-      slide_count?: number
+      strategy?: any; slide_count?: number
     }
     creative_type = parsed.creative_type ?? ''
     product_name  = parsed.product_name  ?? ''
@@ -147,51 +185,37 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     strategy      = parsed.strategy
     slide_count   = parsed.slide_count
   } catch {
-    sendJson(res, { error: 'Invalid request body' }, 400)
-    return
+    sendJson(res, { error: 'Invalid request body' }, 400); return
   }
 
   if (!creative_type || !product_name) {
-    sendJson(res, { error: 'Missing required fields: creative_type, product_name' }, 400)
-    return
+    sendJson(res, { error: 'Missing required fields: creative_type, product_name' }, 400); return
   }
 
-  const size = getSize(creative_type)
+  const aspect     = getAspect(creative_type)
+  const isCarousel = creative_type === 'carrossel'
+  const count      = isCarousel ? Math.min(slide_count ?? 3, 5) : 1
 
   try {
-    const isCarousel = creative_type === 'carrossel'
-    const count = isCarousel ? Math.min(slide_count ?? 3, 5) : 1
-
-    type JobResult = { url: string; label: string; revised_prompt?: string; error?: string }
+    type JobResult = { url: string; label: string; error?: string }
     const jobs: Promise<JobResult>[] = []
 
     for (let i = 0; i < count; i++) {
       const prompt = buildPrompt(creative_type, product_name, niche, strategy, isCarousel ? i : undefined)
       const label  = isCarousel
         ? `Slide ${i + 1}`
-        : creative_type === 'story'
-          ? 'Story'
-          : creative_type.startsWith('video')
-            ? 'Frame-Chave (Thumbnail)'
-            : 'Anúncio'
+        : creative_type === 'story'          ? 'Story'
+        : creative_type.startsWith('video')  ? 'Frame-Chave'
+        : 'Anúncio'
 
       jobs.push(
-        client.images.generate({
-          model:   'dall-e-3',
-          prompt,
-          n:       1,
-          size,
-          quality: 'standard',
-          style:   'natural',
-        }).then(r => ({
-          url:            r.data[0].url ?? '',
-          label,
-          revised_prompt: r.data[0].revised_prompt,
-        })).catch((err: unknown) => ({
-          url:   '',
-          label,
-          error: err instanceof Error ? err.message : 'Falha na geração',
-        }))
+        generateImage(prompt, aspect)
+          .then(url => ({ url, label }))
+          .catch((err: unknown) => ({
+            url:   '',
+            label,
+            error: err instanceof Error ? err.message : 'Falha na geração',
+          }))
       )
     }
 
@@ -199,14 +223,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const assets  = results.filter(r => r.url !== '')
 
     if (assets.length === 0) {
-      sendJson(res, { error: results[0]?.error ?? 'Falha ao gerar imagem' }, 500)
-      return
+      sendJson(res, { error: results[0]?.error ?? 'Nenhuma imagem gerada' }, 500); return
     }
 
     sendJson(res, { assets })
 
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Erro desconhecido'
-    sendJson(res, { error: msg }, 500)
+    sendJson(res, { error: err instanceof Error ? err.message : 'Erro desconhecido' }, 500)
   }
 }
