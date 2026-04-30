@@ -1,6 +1,6 @@
 import type { Product, OfferDiagnosis, Campaign, Creative, Metric, AIDecision, PromptTemplate, AIOfferDiagnosis, AICampaign, AICreative, PerformanceInsight, DailyPlan, LandingPage, ScaleOpportunity, RemarketingStrategy, ExpansaoPlan, EmailSequence, WhatsappFlow, VslScript, MetaCredentials, TikTokCredentials, PlatformSync, LearningPattern, IntelligenceReport, AutoPilotSession, AutoTestSession, AICoreModel, MultiProductSession, FullAutoSession, VideoAIVideo, LandingPublisherPage, CloudOpsState, ComplianceCheck, Relatorio, Pipeline } from '../types'
 
-const SEEDS_KEY = 'tos_seeds_v23'
+const SEEDS_KEY = 'tos_seeds_v24'
 
 const DEFAULT_PROMPTS: Omit<PromptTemplate, 'id' | 'created_at' | 'updated_at'>[] = [
   {
@@ -484,6 +484,221 @@ Seja direto, prático e orientado para conversão.
 Evite textos genéricos.
 
 Crie criativos que chamem atenção rapidamente e gerem curiosidade.`,
+  },
+
+  // ─── Motor de Criativos — 5 módulos sequenciais ──────────────────────────
+  {
+    name: 'Criativos / 01 - Análise Comportamental do Cliente',
+    category: 'Criação de Criativos',
+    description: 'Mapeia o estado mental, emoções, dores, desejos e objeções do cliente antes de criar qualquer anúncio. Etapa 1 do motor de criativos.',
+    variables: ['produto', 'descricao_produto', 'publico_alvo', 'descricao_cliente', 'dor_principal', 'desejo_principal', 'promessa', 'beneficio_principal', 'oferta', 'nicho', 'tom', 'objetivo_campanha'],
+    template: `Você é um especialista em comportamento do consumidor, psicologia de compra e marketing de resposta direta.
+
+Sua função agora NÃO é criar um anúncio.
+
+Sua função é analisar profundamente o cliente ideal no momento exato em que ele está mais propenso a comprar o produto.
+
+Use os dados abaixo:
+
+Produto: {{produto}}
+Descrição do produto: {{descricao_produto}}
+Público-alvo: {{publico_alvo}}
+Descrição do cliente: {{descricao_cliente}}
+Dor principal: {{dor_principal}}
+Desejo principal: {{desejo_principal}}
+Promessa do produto: {{promessa}}
+Benefício principal: {{beneficio_principal}}
+Oferta: {{oferta}}
+Nicho: {{nicho}}
+Tom de comunicação: {{tom}}
+Objetivo da campanha: {{objetivo_campanha}}
+
+Responda de forma estratégica:
+
+1. Qual é a situação de vida exata do cliente no momento em que ele está pronto para comprar?
+2. O que ele provavelmente acabou de viver, sentir ou perceber antes de estar aberto à compra?
+3. Qual problema ele já sabe que tem?
+4. Qual problema ele sente, mas talvez ainda não consiga explicar claramente?
+5. Qual emoção predominante ele sente antes de comprar?
+6. Qual emoção ele quer sentir depois de comprar?
+7. O que ele já tentou antes e não funcionou?
+8. Qual frustração silenciosa ele carrega?
+9. Qual objeção impede ele de comprar agora?
+10. Qual crença limitante precisa ser quebrada?
+11. Qual linguagem faria ele pensar: "isso foi feito pra mim"?
+12. Qual abordagem faria esse anúncio parecer conteúdo natural, e não propaganda óbvia?
+
+A resposta deve ser clara, objetiva e útil para criar anúncios de Facebook Ads.
+
+Não escreva o anúncio ainda.`,
+  },
+  {
+    name: 'Criativos / 02 - Sinais de Conversão para o Algoritmo e para o Público',
+    category: 'Criação de Criativos',
+    description: 'Transforma a análise comportamental em sinais práticos de identificação, emoção, visual e copy para o criativo. Etapa 2 do motor de criativos.',
+    variables: ['analise_comportamental'],
+    template: `Você é um estrategista de criativos para Facebook Ads.
+
+Com base na análise comportamental abaixo:
+
+{{analise_comportamental}}
+
+Extraia os sinais que devem ser plantados no criativo para que o público certo se reconheça rapidamente e para que o algoritmo do Facebook consiga interpretar melhor a intenção do anúncio.
+
+Gere:
+
+1. Sinais de identificação do público:
+Liste 5 situações, frases ou contextos que fazem o cliente pensar "isso é sobre mim".
+
+2. Sinais emocionais:
+Liste 5 emoções que devem estar presentes no criativo.
+
+3. Sinais visuais:
+Liste 5 elementos visuais que representam a vida, desejo ou dor desse público.
+
+4. Sinais textuais:
+Liste 5 palavras ou frases curtas que podem aparecer no criativo.
+
+5. Hooks de parada de scroll:
+Crie 5 frases curtas para chamar atenção nos primeiros 3 segundos.
+
+6. Elementos a evitar:
+Liste o que não deve aparecer no criativo para não parecer genérico, exagerado ou artificial.
+
+A resposta deve ser prática e diretamente aplicável na criação de anúncios.`,
+  },
+  {
+    name: 'Criativos / 03 - Geração de 5 Ângulos Criativos',
+    category: 'Criação de Criativos',
+    description: 'Gera 5 versões de anúncio com ângulos psicológicos distintos: dor direta, desejo aspiracional, quebra de objeção, identificação cotidiana e urgência. Etapa 3 do motor de criativos.',
+    variables: ['produto', 'descricao_produto', 'publico_alvo', 'oferta', 'promessa', 'beneficio_principal', 'tom', 'analise_comportamental', 'sinais_conversao'],
+    template: `Você é um copywriter de resposta direta e estrategista de criativos para Facebook Ads.
+
+Com base nos dados abaixo:
+
+Produto: {{produto}}
+Descrição do produto: {{descricao_produto}}
+Público-alvo: {{publico_alvo}}
+Oferta: {{oferta}}
+Promessa: {{promessa}}
+Benefício principal: {{beneficio_principal}}
+Tom de comunicação: {{tom}}
+
+Análise comportamental:
+{{analise_comportamental}}
+
+Sinais de conversão:
+{{sinais_conversao}}
+
+Crie 5 criativos diferentes para o mesmo produto, cada um com um ângulo psicológico diferente:
+
+Criativo 1 — Dor Direta:
+Focado no problema que o cliente já sabe que tem.
+
+Criativo 2 — Desejo Aspiracional:
+Focado na transformação que o cliente quer alcançar.
+
+Criativo 3 — Quebra de Objeção:
+Focado na dúvida ou bloqueio que impede a compra.
+
+Criativo 4 — Identificação Cotidiana:
+Focado em uma cena comum da vida do cliente, para parecer conteúdo natural.
+
+Criativo 5 — Oportunidade ou Urgência:
+Focado no momento certo para agir, sem parecer apelativo.
+
+Para cada criativo, entregue exatamente esta estrutura:
+
+Nome do criativo:
+Ângulo psicológico:
+Situação do cliente:
+Emoção predominante:
+Hook principal:
+Headline curta:
+Texto secundário curto:
+CTA curto:
+Ideia visual:
+Elementos visuais obrigatórios:
+Elementos que devem ser evitados:
+Estilo visual recomendado:
+Por que esse criativo pode funcionar:
+
+Regras:
+- Não usar frases genéricas.
+- Não usar linguagem artificial.
+- Não criar promessa exagerada.
+- Não parecer anúncio antigo.
+- Priorizar identificação imediata.
+- Criar textos curtos, claros e fortes.
+- Pensar em criativos para Facebook Ads.`,
+  },
+  {
+    name: 'Criativos / 04 - Prompt Final para Ideogram',
+    category: 'Criação de Criativos',
+    description: 'Transforma os 5 criativos gerados em prompts finais prontos para enviar ao Ideogram, com texto legível, layout profissional e aparência nativa de rede social. Etapa 4 do motor de criativos.',
+    variables: ['criativos_gerados', 'produto', 'publico_alvo', 'oferta'],
+    template: `Você é um especialista em criação de prompts para Ideogram, focado em imagens publicitárias para Facebook Ads.
+
+Transforme CADA UM dos 5 criativos abaixo em um prompt final para geração de imagem no Ideogram.
+
+Criativos gerados:
+{{criativos_gerados}}
+
+Produto: {{produto}}
+Público-alvo: {{publico_alvo}}
+Oferta: {{oferta}}
+
+O prompt para Ideogram deve ser escrito em inglês.
+
+O prompt deve incluir:
+
+1. Tipo de imagem: Facebook ad creative, social media ad, high-converting static image.
+2. Composição: Descrever claramente organização, onde fica o texto, produto/personagem/cena, fundo, espaço negativo e hierarquia visual.
+3. Texto exato na imagem: Headline exatamente como deve aparecer. CTA exatamente como deve aparecer. Não adicionar textos extras.
+4. Estilo visual: Estética, iluminação, cores, tom emocional e aparência.
+5. Legibilidade: Texto grande, limpo, bem alinhado e altamente legível.
+6. Aparência nativa: A imagem deve parecer criativo natural de rede social, não banner genérico.
+7. Restrições: Evitar texto distorcido, excesso de elementos, visual poluído, promessas exageradas e aparência artificial.
+
+Regras de ouro:
+- Headlines: máximo 6 palavras
+- CTAs: máximo 3 palavras
+- Sem clichês ("transforme sua vida", "mude agora")
+- Sem claims exagerados ou sensíveis
+- Visual deve parecer feito por copywriter + designer, não IA genérica`,
+  },
+  {
+    name: 'Criativos / 05 - Revisão Estratégica do Criativo',
+    category: 'Criação de Criativos',
+    description: 'Revisa os 5 criativos gerados avaliando clareza, força emocional, naturalidade e potencial de conversão, entregando as versões finais melhoradas para o Ideogram. Etapa 5 do motor de criativos.',
+    variables: ['criativos_gerados'],
+    template: `Você é um diretor de criação especializado em Facebook Ads.
+
+Revise os criativos e prompts Ideogram abaixo antes da geração final das imagens.
+
+Criativos e prompts:
+{{criativos_gerados}}
+
+Avalie cada criativo com base nos critérios:
+
+1. Clareza da mensagem
+2. Força do hook
+3. Identificação com o público
+4. Naturalidade do anúncio
+5. Potencial de parar o scroll
+6. Legibilidade para imagem
+7. Compatibilidade com Facebook Ads
+8. Risco de parecer genérico
+9. Risco de promessa exagerada
+10. Qualidade do prompt para Ideogram
+
+Para cada criativo:
+- Aponte o principal ponto forte.
+- Aponte o principal risco.
+- Melhore o criativo se necessário.
+- Mantenha textos curtos e visuais claros.
+
+Depois, entregue a versão final melhorada dos 5 prompts para Ideogram.`,
   },
 ]
 

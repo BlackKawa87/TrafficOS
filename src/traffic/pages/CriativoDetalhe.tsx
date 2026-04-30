@@ -109,22 +109,31 @@ export default function CriativoDetalhe() {
     setGenError(null)
     setGenDone(false)
 
-    const isCarousel = creative.creative_type === 'carrossel'
-    const slideCount = isCarousel
-      ? Math.min((creative.strategy?.imagem_variacoes ?? []).length || 3, 5)
-      : 1
+    // Read the 5 creative engine prompts from the Prompt Center
+    const allPrompts = tosDb.prompts.getAll()
+    const CREATIVE_PROMPT_NAMES = [
+      'Criativos / 01 - Análise Comportamental do Cliente',
+      'Criativos / 02 - Sinais de Conversão para o Algoritmo e para o Público',
+      'Criativos / 03 - Geração de 5 Ângulos Criativos',
+      'Criativos / 04 - Prompt Final para Ideogram',
+      'Criativos / 05 - Revisão Estratégica do Criativo',
+    ]
+    const promptTemplates = CREATIVE_PROMPT_NAMES.map(name =>
+      allPrompts.find(p => p.name === name) ?? null
+    )
 
     try {
       const res = await fetch('/api/creative-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          creative_type: creative.creative_type,
-          product_name:  product?.name ?? 'Produto',
-          niche:         product?.niche ?? '',
-          strategy:      creative.strategy,
-          slide_count:   slideCount,
-          language:      localStorage.getItem('tos_ai_lang') ?? 'pt-BR',
+          creative_type:    creative.creative_type,
+          product_name:     product?.name ?? 'Produto',
+          niche:            product?.niche ?? '',
+          strategy:         creative.strategy,
+          product:          product ?? null,
+          prompt_templates: promptTemplates,
+          language:         localStorage.getItem('tos_ai_lang') ?? 'pt-BR',
         }),
       })
       if (!res.ok) {
@@ -1256,10 +1265,11 @@ export default function CriativoDetalhe() {
                 {genLoading && (
                   <div className="flex flex-col items-center justify-center py-12 gap-4">
                     <div className="w-12 h-12 rounded-full border-4 border-violet-600/30 border-t-violet-500 animate-spin" />
-                    <p className="text-gray-400 text-sm">
-                      {isCarousel ? 'Gerando slides com Ideogram v3...' : 'Gerando criativo com Ideogram v3...'}
-                    </p>
-                    <p className="text-gray-600 text-xs">Pode levar 10–30 segundos</p>
+                    <div className="text-center space-y-1">
+                      <p className="text-gray-300 text-sm font-medium">Motor estratégico de criativos ativo</p>
+                      <p className="text-gray-500 text-xs">Análise comportamental → Sinais de conversão → 5 ângulos → Revisão → Ideogram</p>
+                    </div>
+                    <p className="text-gray-600 text-xs">Pode levar 30–50 segundos</p>
                   </div>
                 )}
 
