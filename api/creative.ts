@@ -1,6 +1,5 @@
 import OpenAI from 'openai'
-
-export const config = { runtime: 'edge' }
+import type { IncomingMessage, ServerResponse } from 'http'
 
 export const maxDuration = 60
 
@@ -24,7 +23,7 @@ REGRAS GERAIS:
 - Use os dados reais do produto em todas as seções.
 - Adapte o tom e estrutura ao canal e tipo de criativo indicados.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LÓGICA DE PREENCHIMENTO POR TIPO DE CRIATIVO:
 
 ▸ Se o Tipo for "Vídeo Curto", "Vídeo Longo", "UGC" ou "Story":
@@ -36,7 +35,7 @@ LÓGICA DE PREENCHIMENTO POR TIPO DE CRIATIVO:
   → Preencha obrigatoriamente: "imagem_tipo", "imagem_layout", "imagem_texto", "imagem_variacoes" (3 variações), "imagem_estilo", "imagem_referencia"
   → NÃO inclua "cenas", "direcao_gravacao", "direcao_edicao" no JSON de saída
   → No campo "roteiro", use como estrutura narrativa da imagem: hook=headline, problema=contexto/dor, agitacao=urgência, solucao=benefício, cta=chamada visual
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 IMPORTANTE: Retorne APENAS JSON válido. Sem markdown, sem texto fora do JSON. Siga o schema abaixo (campos condicionais marcados com [VIDEO] ou [IMAGEM]).
 
@@ -186,22 +185,37 @@ SCHEMA JSON:
 LEMBRE: remova os marcadores [VIDEO] e [IMAGEM] das chaves no JSON de saída. Inclua apenas os campos relevantes para o tipo detectado.`
 
 
-const json = (data: unknown, status = 200): Response =>
-  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+function readBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    req.on('data', (c: Buffer) => chunks.push(c))
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')))
+    req.on('error', reject)
+  })
+}
 
-export default async function handler(req: Request): Promise<Response> {
+function sendJson(res: ServerResponse, data: unknown, status = 200): void {
+  const body = JSON.stringify(data)
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) })
+  res.end(body)
+}
+
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405)
+    sendJson(res, { error: 'Method not allowed' }, 405); return
   }
 
-  const { creativeData, language } = (await req.json()) as { creativeData: string; language?: string }
+  let rawBody: string
+  try { rawBody = await readBody(req) } catch { sendJson(res, { error: 'Invalid request' }, 400); return }
+
+  const { creativeData, language } = JSON.parse(rawBody) as { creativeData: string; language?: string }
 
   const langLine = language && language !== 'pt-BR'
     ? `\n\nIDIOMA DE RESPOSTA: ${LANG_MAP[language] ?? LANG_MAP['pt-BR']}`
     : ''
 
   if (!creativeData) {
-    return json({ error: 'Creative data is required' }, 400)
+    sendJson(res, { error: 'Creative data is required' }, 400); return
   }
 
   try {
@@ -232,13 +246,13 @@ IMPORTANTE:
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422)
+      sendJson(res, { error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422); return
     }
 
     const strategy = JSON.parse(jsonMatch[0])
-    return json({ strategy })
+    sendJson(res, { strategy }); return
   } catch (err) {
     console.error('Creative API error:', err)
-    return json({ error: 'Failed to generate creative. Please try again.' }, 500)
+    sendJson(res, { error: 'Failed to generate creative. Please try again.' }, 500); return
   }
 }

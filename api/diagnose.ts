@@ -1,6 +1,5 @@
 import OpenAI from 'openai'
-
-export const config = { runtime: 'edge' }
+import type { IncomingMessage, ServerResponse } from 'http'
 
 export const maxDuration = 60
 
@@ -121,22 +120,37 @@ SCHEMA JSON OBRIGATÓRIO:
 }`
 
 
-const json = (data: unknown, status = 200): Response =>
-  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+function readBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    req.on('data', (c: Buffer) => chunks.push(c))
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')))
+    req.on('error', reject)
+  })
+}
 
-export default async function handler(req: Request): Promise<Response> {
+function sendJson(res: ServerResponse, data: unknown, status = 200): void {
+  const body = JSON.stringify(data)
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) })
+  res.end(body)
+}
+
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405)
+    sendJson(res, { error: 'Method not allowed' }, 405); return
   }
 
-  const { productData, language, currency } = (await req.json()) as {
+  let rawBody: string
+  try { rawBody = await readBody(req) } catch { sendJson(res, { error: 'Invalid request' }, 400); return }
+
+  const { productData, language, currency } = JSON.parse(rawBody) as {
     productData: string
     language?: string
     currency?: string
   }
 
   if (!productData) {
-    return json({ error: 'Product data is required' }, 400)
+    sendJson(res, { error: 'Product data is required' }, 400); return
   }
 
   const lang = language ?? 'pt-BR'
@@ -181,13 +195,13 @@ Retorne APENAS o JSON válido conforme o schema.`,
     // Extract JSON object if there's extra text
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422)
+      sendJson(res, { error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422); return
     }
 
     const analysis = JSON.parse(jsonMatch[0])
-    return json({ analysis })
+    sendJson(res, { analysis }); return
   } catch (err) {
     console.error('Diagnosis API error:', err)
-    return json({ error: 'Failed to generate diagnosis. Please try again.' }, 500)
+    sendJson(res, { error: 'Failed to generate diagnosis. Please try again.' }, 500); return
   }
 }

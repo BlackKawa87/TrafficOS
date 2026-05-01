@@ -1,19 +1,10 @@
 import OpenAI from 'openai'
-
-export const config = { runtime: 'edge' }
+import type { IncomingMessage, ServerResponse } from 'http'
 
 export const maxDuration = 60
 
 const client = new OpenAI()
 
-const LANG_MAP: Record<string, string> = {
-  'pt-BR': 'Responda COMPLETAMENTE em Português do Brasil. Todos os textos, análises, copies e recomendações devem estar em PT-BR.',
-  'en-US': 'Respond ENTIRELY in English (US). All texts, analyses, copies and recommendations must be in English.',
-  'es':    'Responde COMPLETAMENTE en Español. Todos los textos, análisis, copies y recomendaciones deben estar en Español.',
-  'fr':    'Répondez ENTIÈREMENT en Français. Tous les textes, analyses, copies et recommandations doivent être en Français.',
-  'de':    'Antworte KOMPLETT auf Deutsch. Alle Texte, Analysen, Copies und Empfehlungen müssen auf Deutsch sein.',
-  'it':    'Rispondi COMPLETAMENTE in Italiano. Tutti i testi, analisi, copies e raccomandazioni devono essere in Italiano.',
-}
 
 const SYSTEM_PROMPT = `Você é um especialista em VSL (Video Sales Letter) de alta conversão, copywriting de resposta direta e direção criativa para vídeos de vendas.
 
@@ -128,18 +119,33 @@ RETORNE APENAS JSON válido com a estrutura exata:
 }`
 
 
-const json = (data: unknown, status = 200): Response =>
-  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+function readBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    req.on('data', (c: Buffer) => chunks.push(c))
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')))
+    req.on('error', reject)
+  })
+}
 
-export default async function handler(req: Request): Promise<Response> {
+function sendJson(res: ServerResponse, data: unknown, status = 200): void {
+  const body = JSON.stringify(data)
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) })
+  res.end(body)
+}
+
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405)
+    sendJson(res, { error: 'Method not allowed' }, 405); return
   }
 
-  const { contextData } = (await req.json()) as { contextData: string }
+  let rawBody: string
+  try { rawBody = await readBody(req) } catch { sendJson(res, { error: 'Invalid request' }, 400); return }
+
+  const { contextData } = JSON.parse(rawBody) as { contextData: string }
 
   if (!contextData) {
-    return json({ error: 'Context data is required' }, 400)
+    sendJson(res, { error: 'Context data is required' }, 400); return
   }
 
   try {
@@ -158,7 +164,7 @@ IMPORTANTE:
 - Use dados específicos do produto: nome real, preço, promessa, mecanismo, dores e público
 - Cada bloco deve ter roteiro PRONTO PARA GRAVAR — natural, sem rodeios
 - texto_completo deve ser o roteiro INTEIRO do início ao fim com marcações [BLOCO]
-- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra${langLine}`,
+- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra`,
         },
       ],
     })
@@ -169,13 +175,13 @@ IMPORTANTE:
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return json({ error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422)
+      sendJson(res, { error: 'Could not parse AI response as JSON', raw: jsonText.slice(0, 500) }, 422); return
     }
 
     const script = JSON.parse(jsonMatch[0])
-    return json({ script })
+    sendJson(res, { script }); return
   } catch (err) {
     console.error('VSL API error:', err)
-    return json({ error: 'Failed to generate VSL. Please try again.' }, 500)
+    sendJson(res, { error: 'Failed to generate VSL. Please try again.' }, 500); return
   }
 }

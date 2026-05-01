@@ -99,7 +99,7 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     const response = await client.chat.completions.create({
       model: 'gpt-4o',
-      max_tokens: 8000,
+      max_tokens: 4000,
       messages: [
         { role: 'system' as const, content: SYSTEM_PROMPT },
         {
