@@ -268,6 +268,69 @@ function AnalysisView({ a, productName }: { a: OfferAnalysis; productName: strin
         </p>
       </SectionCard>
 
+      {/* MELHORIAS PRIORITÁRIAS — aparece somente se houver dimensões < 7 */}
+      {Array.isArray(a.melhorias_prioritarias) && a.melhorias_prioritarias.length > 0 && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚠️</span>
+            <h3 className="text-base font-bold text-amber-400">Plano de Melhorias — Dimensões Abaixo do Ideal</h3>
+            <span className="ml-auto text-xs text-amber-500/70 bg-amber-500/10 px-2 py-0.5 rounded-full">
+              {a.melhorias_prioritarias.length} dimensão{a.melhorias_prioritarias.length > 1 ? 'ões' : ''} para ajustar
+            </span>
+          </div>
+          <p className="text-xs text-gray-400">
+            As dimensões abaixo ficaram com score inferior a 7/10. Cada bloco explica o motivo e traz ações concretas para melhorar.
+          </p>
+          <div className="space-y-4">
+            {a.melhorias_prioritarias.map((m, i) => (
+              <div key={i} className="rounded-xl border border-gray-700 bg-gray-900 p-4 space-y-3">
+                {/* Header da dimensão */}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold text-white text-sm">{m.dimensao_label}</span>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded-full">{m.score_atual}/10 atual</span>
+                    <span className="text-gray-500">→</span>
+                    <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full">{m.score_alvo}/10 potencial</span>
+                  </div>
+                </div>
+                {/* Barra de progresso */}
+                <div className="relative h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div className="absolute h-full bg-red-500/60 rounded-full" style={{ width: `${m.score_atual * 10}%` }} />
+                  <div
+                    className="absolute h-full bg-emerald-500/40 rounded-full border-r-2 border-emerald-400"
+                    style={{ left: `${m.score_atual * 10}%`, width: `${(m.score_alvo - m.score_atual) * 10}%` }}
+                  />
+                </div>
+                {/* Motivo */}
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold text-amber-400 uppercase tracking-wide">Por que ficou baixo</p>
+                  <p className="text-sm text-gray-300 leading-relaxed">{m.motivo_baixa_nota}</p>
+                </div>
+                {/* Ações */}
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold text-violet-400 uppercase tracking-wide">O que fazer</p>
+                  <ul className="space-y-1.5">
+                    {m.melhorias.map((melhoria, j) => (
+                      <li key={j} className="flex gap-2 text-sm text-gray-300">
+                        <span className="text-violet-400 mt-0.5 flex-shrink-0">▸</span>
+                        <span>{melhoria}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {/* Exemplo de copy */}
+                {m.exemplo_copy && (
+                  <div className="rounded-lg bg-gray-800 border border-gray-700 p-3 space-y-1">
+                    <p className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wide">Exemplo aplicado</p>
+                    <p className="text-sm text-gray-200 italic leading-relaxed">"{m.exemplo_copy}"</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 02 - Avatar */}
       <SectionCard
         num={2}

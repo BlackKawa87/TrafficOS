@@ -116,8 +116,25 @@ SCHEMA JSON OBRIGATÓRIO:
     "o_que_esta_bom": "<o que está funcionando bem na oferta atual>",
     "o_que_melhorar": "<o que precisa ser melhorado com prioridade>",
     "proximo_passo": "<ação concreta e específica para dar agora>"
-  }
-}`
+  },
+  "melhorias_prioritarias": [
+    {
+      "dimensao": "<chave da dimensão: clareza_promessa | forca_dor | urgencia | diferenciacao | facilidade_anuncio | potencial_escala | risco_conversao>",
+      "dimensao_label": "<nome amigável: ex 'Urgência'>",
+      "score_atual": <score atual desta dimensão>,
+      "score_alvo": <score realista após as melhorias>,
+      "motivo_baixa_nota": "<por que ESTE produto/oferta ficou com score baixo aqui — específico, não genérico>",
+      "melhorias": [
+        "<ação concreta 1 — o que mudar na oferta, copy ou estrutura>",
+        "<ação concreta 2>",
+        "<ação concreta 3>"
+      ],
+      "exemplo_copy": "<exemplo real de headline, copy ou elemento de oferta aplicando as melhorias>"
+    }
+  ]
+}
+
+REGRA: Inclua em "melhorias_prioritarias" APENAS dimensões com score < 7. Se todas ≥ 7, retorne array vazio. Seja 100% específico para ESTE produto.`
 
 
 function readBody(req: IncomingMessage): Promise<string> {

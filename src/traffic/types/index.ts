@@ -211,6 +211,15 @@ export interface OfferAnalysis {
     o_que_melhorar: string
     proximo_passo: string
   }
+  melhorias_prioritarias?: Array<{
+    dimensao: string
+    dimensao_label: string
+    score_atual: number
+    score_alvo: number
+    motivo_baixa_nota: string
+    melhorias: string[]
+    exemplo_copy: string
+  }>
 }
 
 export interface AIOfferDiagnosis {
