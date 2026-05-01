@@ -131,7 +131,7 @@ IMPORTANTE:
 - Use os dados reais para embasar cada insight — não gere análises genéricas
 - Se algum módulo não tiver dados, aponte isso como oportunidade de coletar mais informações
 - Seja crítico: identifique o que está custando dinheiro e o que está sendo perdido
-- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra${langLine}`,
+- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra`,
         },
       ],
     })

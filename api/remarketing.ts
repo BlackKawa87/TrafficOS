@@ -145,7 +145,7 @@ ${contextData}
 IMPORTANTE:
 - Use os dados reais do produto para personalizar cada público e criativo
 - Gere os 5 públicos obrigatórios com criativos completos
-- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra${langLine}`,
+- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra`,
         },
       ],
     })

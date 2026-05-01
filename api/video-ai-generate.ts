@@ -105,7 +105,7 @@ export default async function handler(req: Request): Promise<Response> {
 
 ${context}
 
-Retorne APENAS o JSON válido sem markdown, sem texto extra, sem comentários.${langLine}`,
+Retorne APENAS o JSON válido sem markdown, sem texto extra, sem comentários.`,
         },
       ],
     })

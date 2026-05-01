@@ -72,7 +72,7 @@ export default async function handler(req: Request): Promise<Response> {
 
 ${sessionData}
 
-Retorne APENAS o JSON válido sem markdown ou texto extra.${langLine}`,
+Retorne APENAS o JSON válido sem markdown ou texto extra.`,
         },
       ],
     })

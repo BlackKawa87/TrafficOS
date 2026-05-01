@@ -84,7 +84,7 @@ Canal: ${channel || 'não especificado'}
 Objetivo: ${objective || 'não especificado'}
 Descrição: ${creativeDescription}
 
-Retorne APENAS o JSON válido sem markdown ou texto extra.${langLine}`,
+Retorne APENAS o JSON válido sem markdown ou texto extra.`,
         },
       ],
     })

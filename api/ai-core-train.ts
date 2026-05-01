@@ -91,7 +91,7 @@ export default async function handler(req: Request): Promise<Response> {
         { role: 'system' as const, content: SYSTEM_PROMPT },
         {
           role: 'user',
-          content: `Analise o histórico completo desta conta e gere o modelo de inteligência:\n\n${contextData}\n\nRetorne APENAS o JSON válido (objeto) sem markdown ou texto extra.${langLine}`,
+          content: `Analise o histórico completo desta conta e gere o modelo de inteligência:\n\n${contextData}\n\nRetorne APENAS o JSON válido (objeto) sem markdown ou texto extra.`,
         },
       ],
     })

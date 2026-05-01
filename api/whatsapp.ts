@@ -133,7 +133,7 @@ ${contextData}
 IMPORTANTE:
 - Mensagens CURTAS (2-5 linhas max) — estilo WhatsApp real
 - Use dados específicos do produto nos textos
-- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra${langLine}`,
+- Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra`,
         },
       ],
     })

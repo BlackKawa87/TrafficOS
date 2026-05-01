@@ -96,7 +96,7 @@ ${productData}
 CRIATIVO BASE:
 ${creativeData}
 
-Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra.${langLine}`,
+Retorne APENAS o JSON válido (objeto) sem markdown ou texto extra.`,
         },
       ],
     })

@@ -75,7 +75,7 @@ export default async function handler(req: Request): Promise<Response> {
         { role: 'system' as const, content: SYSTEM_PROMPT },
         {
           role: 'user',
-          content: `Analise esta sessão de auto-pilot e gere o diagnóstico estratégico:\n\n${sessionData}\n\nRetorne APENAS o JSON válido (objeto) sem markdown ou texto extra.${langLine}`,
+          content: `Analise esta sessão de auto-pilot e gere o diagnóstico estratégico:\n\n${sessionData}\n\nRetorne APENAS o JSON válido (objeto) sem markdown ou texto extra.`,
         },
       ],
     })

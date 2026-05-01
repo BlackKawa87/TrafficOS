@@ -137,7 +137,7 @@ Analise esses dados e gere o relatório executivo completo no formato JSON espec
       max_tokens: 2500,
       messages: [
         { role: 'system' as const, content: systemPrompt },
-        { role: 'user', content: userPrompt + langLine },
+        { role: 'user', content: userPrompt },
       ],
     })
 

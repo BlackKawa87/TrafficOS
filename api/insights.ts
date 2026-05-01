@@ -55,7 +55,7 @@ export default async function handler(req: Request): Promise<Response> {
       max_tokens: 4000,
       messages: [
         { role: 'system' as const, content: SYSTEM_PROMPT },
-        { role: 'user', content: insightsData + langLine },
+        { role: 'user', content: insightsData },
       ],
     })
 

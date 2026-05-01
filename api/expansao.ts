@@ -112,7 +112,7 @@ IMPORTANTE:
 - Identifique o canal atual com melhor performance e use como source_channel
 - Recomende apenas canais NÃO usados atualmente ou usados com baixo volume
 - Personalize cada plano com dados reais do produto
-- Retorne APENAS o JSON válido (array) sem markdown ou texto extra${langLine}`,
+- Retorne APENAS o JSON válido (array) sem markdown ou texto extra`,
         },
       ],
     })
